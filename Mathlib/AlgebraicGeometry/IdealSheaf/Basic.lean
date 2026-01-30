@@ -3,8 +3,11 @@ Copyright (c) 2025 Andrew Yang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang
 -/
-import Mathlib.AlgebraicGeometry.Morphisms.QuasiCompact
-import Mathlib.AlgebraicGeometry.Properties
+module
+
+public import Mathlib.AlgebraicGeometry.Morphisms.QuasiCompact
+public import Mathlib.AlgebraicGeometry.Properties
+public import Mathlib.Tactic.DepRewrite
 
 /-!
 # Ideal sheaves on schemes
@@ -39,6 +42,8 @@ ideal sheaf. This should be refactored as a constructor for ideal sheaves once t
 into mathlib.
 
 -/
+
+@[expose] public section
 
 open CategoryTheory TopologicalSpace
 
@@ -229,6 +234,38 @@ lemma ideal_le_comap_ideal {U V : X.affineOpens} (h : U ≤ V) :
     I.ideal V ≤ (I.ideal U).comap (X.presheaf.map (homOfLE h).op).hom := by
   rw [← Ideal.map_le_iff_le_comap, ← I.map_ideal h]
 
+lemma le_of_iSup_eq_top {I J : X.IdealSheafData} {ι : Type*}
+    (U : ι → X.affineOpens) (hU : ⨆ i, (U i).1 = ⊤) (H : ∀ i, I.ideal (U i) ≤ J.ideal (U i)) :
+    I ≤ J := by
+  intro V
+  have : ∀ x : V.1, ∃ (i : ι) (r : Γ(X, V.1)) (rU : Γ(X, U i)),
+      X.basicOpen r = X.basicOpen rU ∧ x.1 ∈ X.basicOpen r := by
+    intro ⟨x, hxV⟩
+    obtain ⟨i, hi⟩ := TopologicalSpace.Opens.mem_iSup.mp (hU.ge (Set.mem_univ x))
+    exact ⟨i, exists_basicOpen_le_affine_inter V.2 (U i).2 _ ⟨hxV, hi⟩⟩
+  choose i r rU e hxr using this
+  have : Ideal.span (Set.range r) = ⊤ := by
+    rw [← V.2.self_le_iSup_basicOpen_iff]
+    exact fun x hxV ↦ TopologicalSpace.Opens.mem_iSup.mpr ⟨⟨_, _, rfl⟩, hxr ⟨x, hxV⟩⟩
+  have inst := V.2.isLocalization_basicOpen
+  refine Submodule.le_of_isLocalized_span _ this (fun i ↦ Γ(X, X.basicOpen i.1))
+    (fun i ↦ Algebra.linearMap Γ(X, V.1) Γ(X, X.basicOpen i.1)) ?_
+  rintro ⟨_, j, rfl⟩
+  dsimp
+  simp only [← Submodule.restrictScalars_localized' Γ(X, X.basicOpen (r j)),
+    Ideal.localized'_eq_map, RingHom.algebraMap_toAlgebra]
+  erw [I.map_ideal (U := ⟨_, V.2.basicOpen _⟩) (X.basicOpen_le (r j)),
+    J.map_ideal (U := ⟨_, V.2.basicOpen _⟩) (X.basicOpen_le (r j))]
+  delta algebra_section_section_basicOpen
+  rw! [e]
+  rw [← I.map_ideal (V := (U _)) (X.basicOpen_le _), ← J.map_ideal (V := (U _)) (X.basicOpen_le _)]
+  exact Ideal.map_mono (f := (X.presheaf.map (homOfLE (X.basicOpen_le (rU j))).op).hom) (H (i j))
+
+lemma ext_of_iSup_eq_top {I J : X.IdealSheafData} {ι : Type*}
+    (U : ι → X.affineOpens) (hU : ⨆ i, (U i).1 = ⊤) (H : ∀ i, I.ideal (U i) = J.ideal (U i)) :
+    I = J :=
+  (le_of_iSup_eq_top U hU (by aesop)).antisymm (le_of_iSup_eq_top U hU (by aesop))
+
 end map_ideal
 
 section support
@@ -393,7 +430,7 @@ open _root_.PrimeSpectrum TopologicalSpace
 @[deprecated (since := "2025-08-10")] alias Scheme.zeroLocus_radical :=
   AlgebraicGeometry.Scheme.zeroLocus_radical
 
-/-- The radical of a ideal sheaf. -/
+/-- The radical of an ideal sheaf. -/
 @[simps! ideal]
 def radical (I : IdealSheafData X) : IdealSheafData X :=
   mkOfMemSupportIff
@@ -443,17 +480,17 @@ The reduced induced scheme structure on the closed set is the quotient of this i
 @[simps! ideal coe_support]
 nonrec def vanishingIdeal (Z : Closeds X) : IdealSheafData X :=
   mkOfMemSupportIff
-    (fun U ↦ vanishingIdeal (U.2.fromSpec.base ⁻¹' Z))
+    (fun U ↦ vanishingIdeal (U.2.fromSpec ⁻¹' Z))
     (fun U f ↦ by
       let F := X.presheaf.map (homOfLE (X.basicOpen_le f)).op
       apply le_antisymm
       · rw [Ideal.map_le_iff_le_comap]
         intro x hx
-        suffices ∀ p, (X.affineBasicOpen f).2.fromSpec.base p ∈ Z → F.hom x ∈ p.asIdeal by
+        suffices ∀ p, (X.affineBasicOpen f).2.fromSpec p ∈ Z → F.hom x ∈ p.asIdeal by
           simpa [PrimeSpectrum.mem_vanishingIdeal] using this
         intro x hxZ
         refine (PrimeSpectrum.mem_vanishingIdeal _ _).mp hx
-          ((Spec.map (X.presheaf.map (homOfLE _).op)).base x) ?_
+          (Spec.map (X.presheaf.map (homOfLE _).op) x) ?_
         rwa [Set.mem_preimage, ← Scheme.Hom.comp_apply,
           IsAffineOpen.map_fromSpec _ (X.affineBasicOpen f).2]
       · letI : Algebra Γ(X, U) Γ(X, X.affineBasicOpen f) := F.hom.toAlgebra
@@ -461,12 +498,12 @@ nonrec def vanishingIdeal (Z : Closeds X) : IdealSheafData X :=
           U.2.isLocalization_of_eq_basicOpen _ _ rfl
         intro x hx
         dsimp only at hx ⊢
-        have : Topology.IsOpenEmbedding (Spec.map F).base :=
+        have : Topology.IsOpenEmbedding (Spec.map F) :=
           localization_away_isOpenEmbedding Γ(X, X.basicOpen f) f
         rw [← U.2.map_fromSpec (X.affineBasicOpen f).2 (homOfLE (X.basicOpen_le f)).op,
           Scheme.Hom.comp_base, TopCat.coe_comp, Set.preimage_comp] at hx
-        generalize U.2.fromSpec.base ⁻¹' Z = Z' at hx ⊢
-        replace hx : x ∈ vanishingIdeal ((Spec.map F).base ⁻¹' Z') := hx
+        generalize U.2.fromSpec ⁻¹' Z = Z' at hx ⊢
+        replace hx : x ∈ vanishingIdeal (Spec.map F ⁻¹' Z') := hx
         obtain ⟨I, hI, e⟩ :=
           (isClosed_iff_zeroLocus_radical_ideal _).mp (isClosed_closure (s := Z'))
         rw [← vanishingIdeal_closure,
@@ -478,10 +515,10 @@ nonrec def vanishingIdeal (Z : Closeds X) : IdealSheafData X :=
           ← IsLocalization.map_radical (.powers f), ← vanishingIdeal_zeroLocus_eq_radical] at hx)
     Z
     (fun U x hxU ↦ by
-      trans x ∈ X.zeroLocus (U := U.1) (vanishingIdeal (U.2.fromSpec.base.hom ⁻¹' Z)) ∩ U.1
+      trans x ∈ X.zeroLocus (U := U.1) (vanishingIdeal (U.2.fromSpec ⁻¹' Z)) ∩ U.1
       · rw [← U.2.fromSpec_image_zeroLocus, zeroLocus_vanishingIdeal_eq_closure,
           ← U.2.fromSpec.isOpenEmbedding.isOpenMap.preimage_closure_eq_closure_preimage
-            U.2.fromSpec.base.1.2,
+            U.2.fromSpec.continuous,
           Set.image_preimage_eq_inter_range, Z.isClosed.closure_eq, IsAffineOpen.range_fromSpec]
         simp [hxU]
       · simp [hxU])
@@ -498,9 +535,6 @@ lemma le_support_iff_le_vanishingIdeal {I : X.IdealSheafData} {Z : Closeds X} :
   rw [coe_support_inter, ← Set.image_subset_image_iff U.2.fromSpec.isOpenEmbedding.injective,
     Set.image_preimage_eq_inter_range, IsAffineOpen.fromSpec_image_zeroLocus,
     IsAffineOpen.range_fromSpec]
-
-@[deprecated (since := "2025-05-16")]
-alias subset_support_iff_le_vanishingIdeal := le_support_iff_le_vanishingIdeal
 
 /-- `support` and `vanishingIdeal` forms a Galois connection.
 This is the global version of `PrimeSpectrum.gc`. -/
@@ -630,11 +664,11 @@ lemma ker_of_isAffine {X Y : Scheme} (f : X ⟶ Y) [IsAffine Y] :
   intro x
   simp +contextual
 
-lemma Hom.range_subset_ker_support (f : X.Hom Y) :
-    Set.range f.base ⊆ f.ker.support := by
+lemma Hom.range_subset_ker_support (f : X ⟶ Y) :
+    Set.range f ⊆ f.ker.support := by
   rintro _ ⟨x, rfl⟩
   obtain ⟨_, ⟨U, hU, rfl⟩, hxU, -⟩ :=
-    Y.isBasis_affineOpens.exists_subset_of_mem_open (Set.mem_univ (f.base x)) isOpen_univ
+    Y.isBasis_affineOpens.exists_subset_of_mem_open (Set.mem_univ (f x)) isOpen_univ
   refine ((coe_support_inter f.ker ⟨U, hU⟩).ge ⟨?_, hxU⟩).1
   simp only [Scheme.mem_zeroLocus_iff, SetLike.mem_coe]
   intro s hs hxs
@@ -656,7 +690,7 @@ lemma Hom.iInf_ker_openCover_map_comp_apply
   obtain ⟨i, x, rfl⟩ := 𝒰.exists_eq x
   simp only [homOfLE_leOfHom, map_zero, exists_and_left]
   refine ⟨𝒰.f i ''ᵁ 𝒰.f i ⁻¹ᵁ f ⁻¹ᵁ U.1, ⟨_, hxU, rfl⟩,
-    Set.image_preimage_subset (𝒰.f i).base (f ⁻¹ᵁ U), ?_⟩
+    Set.image_preimage_subset (𝒰.f i) (f ⁻¹ᵁ U), ?_⟩
   apply ((𝒰.f i).appIso _).commRingCatIsoToRingEquiv.injective
   rw [map_zero, ← RingEquiv.coe_toRingHom, Iso.commRingCatIsoToRingEquiv_toRingHom,
     Scheme.Hom.appIso_hom']
@@ -717,8 +751,8 @@ lemma ker_ideal_of_isPullback_of_isOpenImmersion {X Y U V : Scheme.{u}}
     ← CommRingCat.hom_comp, this]
   simpa using (map_eq_zero_iff _ (ConcreteCategory.bijective_of_isIso e.inv).1).symm
 
-lemma Hom.support_ker (f : X.Hom Y) [QuasiCompact f] :
-    f.ker.support = closure (Set.range f.base) := by
+lemma Hom.support_ker (f : X ⟶ Y) [QuasiCompact f] :
+    f.ker.support = closure (Set.range f) := by
   apply subset_antisymm
   · wlog hY : ∃ S, Y = Spec S
     · intro x hx
@@ -728,8 +762,8 @@ lemma Hom.support_ker (f : X.Hom Y) [QuasiCompact f] :
         MorphismProperty.pullback_snd _ _ inferInstance
       have := this (𝒰.pullbackHom f i) ⟨_, rfl⟩
         ((coe_support_inter _ ⟨⊤, isAffineOpen_top _⟩).ge ⟨?_, Set.mem_univ x⟩).1
-      · have := image_closure_subset_closure_image (f := (𝒰.f i).base)
-          (𝒰.f i).base.1.2 (Set.mem_image_of_mem _ this)
+      · have := image_closure_subset_closure_image (f := 𝒰.f i)
+          (𝒰.f i).continuous (Set.mem_image_of_mem _ this)
         rw [← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base, 𝒰.pullbackHom_map] at this
         exact closure_mono (Set.range_comp_subset_range _ _) this
       · rw [← (𝒰.f i).isOpenEmbedding.injective.mem_set_image, Scheme.image_zeroLocus,
@@ -753,8 +787,8 @@ lemma Hom.support_ker (f : X.Hom Y) [QuasiCompact f] :
     rw [ker_of_isAffine, coe_support_ofIdealTop, Spec_zeroLocus, ← Ideal.coe_comap,
       RingHom.comap_ker, ← PrimeSpectrum.closure_range_comap, ← CommRingCat.hom_comp,
       ← Scheme.ΓSpecIso_inv_naturality]
-    simp only [CommRingCat.hom_comp, PrimeSpectrum.comap_comp, ContinuousMap.coe_comp]
-    exact closure_mono (Set.range_comp_subset_range _ (Spec.map φ).base)
+    simp only [CommRingCat.hom_comp, PrimeSpectrum.comap_comp]
+    exact closure_mono (Set.range_comp_subset_range _ (Spec.map φ))
   · rw [(support _).isClosed.closure_subset_iff]
     exact f.range_subset_ker_support
 

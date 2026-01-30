@@ -3,16 +3,18 @@ Copyright (c) 2024 Andrew Yang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang
 -/
-import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Scheme
-import Mathlib.AlgebraicGeometry.AffineScheme
-import Mathlib.AlgebraicGeometry.Gluing
+module
+
+public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Scheme
+public import Mathlib.AlgebraicGeometry.AffineScheme
+public import Mathlib.AlgebraicGeometry.Gluing
 
 /-!
 
 # Basic properties of the scheme `Proj A`
 
 The scheme `Proj 𝒜` for a graded ring `𝒜` is constructed in
-`AlgebraicGeometry/ProjectiveSpectrum/Scheme.lean`.
+`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Scheme.lean`.
 In this file we provide basic properties of the scheme.
 
 ## Main results
@@ -30,6 +32,8 @@ In this file we provide basic properties of the scheme.
   generates the whole ring, we can construct a map `X ⟶ Proj 𝒜`.
 
 -/
+
+@[expose] public section
 
 namespace AlgebraicGeometry.Proj
 
@@ -300,7 +304,7 @@ lemma awayι_preimage_basicOpen :
     awayι 𝒜 f f_deg hm ⁻¹ᵁ basicOpen 𝒜 g =
       PrimeSpectrum.basicOpen (Away.isLocalizationElem f_deg g_deg) := by
   ext1
-  trans Set.range (Spec.map (CommRingCat.ofHom (awayMap 𝒜 g_deg rfl))).base
+  trans Set.range (Spec.map (CommRingCat.ofHom (awayMap 𝒜 g_deg rfl)))
   · rw [← pullbackAwayιIso_inv_fst 𝒜 f_deg hm g_deg hm' rfl]
     simp only [TopologicalSpace.Opens.map_coe, Scheme.Hom.comp_base,
       TopCat.hom_comp, ContinuousMap.coe_comp, Set.range_comp]

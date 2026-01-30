@@ -3,8 +3,10 @@ Copyright (c) 2025 Amelia Livingston. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Amelia Livingston
 -/
-import Mathlib.Algebra.Homology.ShortComplex.ModuleCat
-import Mathlib.RepresentationTheory.Rep
+module
+
+public import Mathlib.Algebra.Homology.ShortComplex.ModuleCat
+public import Mathlib.RepresentationTheory.Rep
 
 /-!
 # Coinvariants of a group representation
@@ -34,6 +36,8 @@ left adjoint to the functor equipping a module with the trivial representation.
   `⟦a ⊗ single x (single g r)⟧ ↦ single x (r • ρ(g⁻¹)(a))`. This is useful for group homology.
 
 -/
+
+@[expose] public section
 
 universe u v
 
@@ -301,6 +305,13 @@ abbrev toCoinvariantsKer : Rep k G := Rep.of (A.ρ.toCoinvariantsKer S)
 the `S`-coinvariants `A_S`. -/
 abbrev toCoinvariants : Rep k G := Rep.of (A.ρ.toCoinvariants S)
 
+/-- The quotient map `A → A_S` as a representation morphism. -/
+def toCoinvariantsMkQ : A ⟶ toCoinvariants A S := mkQ _ _ _
+
+@[simp]
+lemma toCoinvariantsMkQ_hom :
+    (toCoinvariantsMkQ A S).hom.hom = Coinvariants.mk (A.ρ.comp S.subtype) := rfl
+
 /-- Given a normal subgroup `S ≤ G`, a `G`-representation `ρ` induces a `G ⧸ S`-representation on
 the coinvariants of `ρ|_S`. -/
 abbrev quotientToCoinvariants : Rep k (G ⧸ S) := ofQuotient (toCoinvariants A S) S
@@ -314,7 +325,7 @@ def coinvariantsShortComplex : ShortComplex (Rep k G) where
   X₂ := A
   X₃ := toCoinvariants A S
   f := subtype ..
-  g := mkQ ..
+  g := toCoinvariantsMkQ A S
   zero := by ext x; exact (Submodule.Quotient.mk_eq_zero _).2 x.2
 
 lemma coinvariantsShortComplex_shortExact : (coinvariantsShortComplex A S).ShortExact where
@@ -374,7 +385,7 @@ equipping a module with the trivial representation. -/
 noncomputable def coinvariantsAdjunction : coinvariantsFunctor k G ⊣ trivialFunctor k G where
   unit := { app X := {
     hom := (coinvariantsMk k G).app X
-    comm _ := by ext; simp [ModuleCat.endRingEquiv, trivialFunctor] }}
+    comm _ := by ext; simp [ModuleCat.endRingEquiv, trivialFunctor] } }
   counit := { app X := desc (B := trivial k G X) (𝟙 _) }
 
 @[simp]
@@ -457,8 +468,7 @@ lemma coinvariantsTensorFreeToFinsupp_mk_tmul_single (x : A) (i : α) (g : G) (r
     DFunLike.coe (F := (A.ρ.tprod (Representation.free k G α)).Coinvariants →ₗ[k] α →₀ A.V)
       (coinvariantsTensorFreeToFinsupp A α) (Coinvariants.mk _ (x ⊗ₜ single i (single g r))) =
       single i (r • A.ρ g⁻¹ x) := by
-  simp [tensorObj_carrier, coinvariantsTensorFreeToFinsupp,
-    Coinvariants.map, finsuppTensorRight, TensorProduct.finsuppRight]
+  simp [tensorObj_carrier, coinvariantsTensorFreeToFinsupp, Coinvariants.map]
 
 variable (A α)
 
