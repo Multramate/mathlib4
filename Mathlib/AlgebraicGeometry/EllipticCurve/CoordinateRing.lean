@@ -131,15 +131,14 @@ instance : IsFractionRing E.CoordinateRing E.FunctionField' :=
 
 example : FaithfulSMul E.CoordinateRing E.FunctionField' := inferInstance
 
--- may be unnecessary for the final goal
 theorem isIntegral_coordinateRing_iff {f : E.FunctionField'} :
-    IsIntegral E.CoordinateRing f ↔ IsIntegral R[X] f := by
-  sorry -- use that E.CoordinateRing is integral over R[X]
+    IsIntegral E.CoordinateRing f ↔ IsIntegral R[X] f :=
+  ⟨isIntegral_trans f, IsIntegral.tower_top⟩
 
 -- this deals with the q = 0 case
 theorem isIntegral_algebraMap_iff {p : R(X)} :
     IsIntegral R[X] (algebraMap _ E.FunctionField' p) ↔ p ∈ toRatFunc.range := by
-  sorry -- use that R[X] is integrally closed in R(X), and `isIntegral_algHom_iff`
+  sorry
 
 variable (p q : R(X))
 
@@ -162,8 +161,10 @@ theorem FunctionField'.exists_comb_eq (f : E.FunctionField') : ∃ p q : R(X), E
 -- If q ≠ 0, the minimal polynomial of f = p + qY is quadratic, given by Z² - Tr(f)Z + N(f).
 theorem minpoly_comb (hq : q ≠ 0) :
     minpoly R(X) (E.comb p q) = X ^ 2 - C (E.trace p q) * X + C (E.norm p q) := by
-  sorry
-  -- refine (minpoly.eq_of_irreducible_of_monic ?_ ?_ ?_).symm
+  refine (minpoly.eq_of_irreducible_of_monic ?_ ?_ ?_).symm
+  · sorry
+  · sorry
+  · monicity!
 
 theorem trace_sq_sub_four_mul_norm :
     E.trace p q ^ 2 - 4 * E.norm p q = q ^ 2 * E.twoTorsionPolynomial.toPoly.toRatFunc := by
@@ -216,10 +217,7 @@ theorem separable_twoTorsionPolynomial : E.twoTorsionPolynomial.toPoly.Separable
   let F := SplittingField E.twoTorsionPolynomial.toPoly
   apply (nodup_aroots_iff_of_splits (K := F) _ _).mp
   · rw [aroots, ← Cubic.map_toPoly]
-    -- TODO: simplify the proof after #31912
-    have ⟨_, _, _, w⟩ := (E.twoTorsionPolynomial.splits_iff_roots_eq_three (φ := algebraMap K F)
-      four_ne_zero).mp (IsSplittingField.splits _ _)
-    exact (Cubic.discr_ne_zero_iff_roots_nodup four_ne_zero w).mp h
+    exact (Cubic.discr_ne_zero_iff_roots_nodup four_ne_zero <| IsSplittingField.splits _ _).mp h
   · exact Cubic.ne_zero_of_a_ne_zero four_ne_zero
   exact IsSplittingField.splits _ _
 
@@ -250,7 +248,10 @@ section Char2
 variable [CharP K 2]
 
 theorem a₁_or_a₃_ne_zero_of_char_two : E.a₁ ≠ 0 ∨ E.a₃ ≠ 0 := by
-  sorry -- use `WeierstrassCurve.Δ_of_char_two`
+  have h : Δ E ≠ 0 := isUnit_iff_ne_zero.mp <| (isElliptic_iff _).mp <| by assumption
+  contrapose! h
+  rw [Δ_of_char_two, h.left, h.right]
+  ring1
 
 theorem trace_eq_of_char_two : E.trace p q = q * (C E.a₁ * X + C E.a₃).toRatFunc := by
   sorry
@@ -350,90 +351,112 @@ example : IsIntegralClosure E.CoordinateRing K[X] E.FunctionField' := inferInsta
 example : IsIntegrallyClosedIn E.CoordinateRing E.FunctionField' := inferInstance
 
 theorem coeff_ne_zero_is_separable {R} [Field R] {f : R[X]} (p n : ℕ) [HF : CharP R p]
-        (irred : Irreducible f) (not_dvd : ¬p∣n) (coeff_ne_zero : f.coeff n ≠ 0) : f.Separable := by
-    rcases Polynomial.separable_or p irred with h|h
-    · assumption
-    apply And.symm at h
-    rw [← Classical.not_imp] at h
+    (irred : Irreducible f) (not_dvd : ¬p∣n) (coeff_ne_zero : f.coeff n ≠ 0) : f.Separable := by
+  rcases Polynomial.separable_or p irred with h|h
+  · assumption
+  apply And.symm at h
+  rw [← Classical.not_imp] at h
+  contrapose! h
+  intro j
+  contrapose! j
+  intro x irrx
+  by_cases hpn : 0 < p
+  · have k : ((expand R p) x).coeff n = 0 := by
+      convert Polynomial.coeff_expand hpn x n
+      rw [if_neg not_dvd]
+    intro i
+    rw [Polynomial.ext_iff] at i
+    have jp : ((expand R p) x).coeff n = f.coeff n := by exact i n
+    rw [k] at jp
+    apply coeff_ne_zero
+    symm
+    assumption
+  · simp only [not_lt, nonpos_iff_eq_zero] at hpn
     contrapose! h
-    intro j
-    contrapose! j
-    intro x irrx
-    by_cases hpn : 0 < p
-    · have k : ((expand R p) x).coeff n = 0 := by
-        convert Polynomial.coeff_expand hpn x n
-        rw [if_neg not_dvd]
-      intro i
-      rw [Polynomial.ext_iff] at i
-      have jp : ((expand R p) x).coeff n = f.coeff n := by exact i n
-      rw [k] at jp
-      apply coeff_ne_zero;symm;assumption
-    · simp at hpn
-      contrapose! h
-      have : CharZero R := by rw [← CharP.charP_zero_iff_charZero];rw [hpn] at HF;assumption
-      apply Irreducible.separable irred
-
-
-
+    have : CharZero R := by
+      rw [← CharP.charP_zero_iff_charZero]
+      rw [hpn] at HF
+      assumption
+    apply Irreducible.separable irred
 
 instance : Algebra.IsSeparable K(X) E.FunctionField' := by
   rw [Algebra.isSeparable_iff]
   intro x
   rcases FunctionField'.exists_comb_eq E x with ⟨p',q',rfl⟩
   constructor
-  · apply IsIntegral.add ; · apply IsIntegral.smul ; exact isIntegral_one
-    apply IsIntegral.smul ; apply AdjoinRoot.isIntegral_root' _
+  · apply IsIntegral.add
+    · apply IsIntegral.smul
+      exact isIntegral_one
+    apply IsIntegral.smul
+    apply AdjoinRoot.isIntegral_root' _
     apply Polynomial.Monic.map
     exact monic_polynomial
   · apply Field.isSeparable_add
     · have : (1 : E.FunctionField') =
-        (AdjoinRoot.of (Polynomial.map (algebraMap K[X] K(X)) E.polynomial)) (1:K(X)) :=by exact rfl
+        (AdjoinRoot.of (Polynomial.map (algebraMap K[X] K(X)) E.polynomial)) (1:K(X)) := rfl
       rw [this]
       have jr : p' • (AdjoinRoot.of (Polynomial.map (algebraMap K[X] K(X)) E.polynomial)) 1 =
                 (AdjoinRoot.of (Polynomial.map (algebraMap K[X] K(X)) E.polynomial)) p' := by
-        rw [AdjoinRoot.smul_of,smul_eq_mul]; simp
+        rw [AdjoinRoot.smul_of, smul_eq_mul]
+        simp
       rw [jr]
       apply isSeparable_algebraMap p'
     have hr: q' • (AdjoinRoot.mk (Polynomial.map (algebraMap K[X] K(X)) E.polynomial) X) =
              (AdjoinRoot.of (Polynomial.map (algebraMap K[X] K(X)) E.polynomial)) q' •
              (AdjoinRoot.mk (Polynomial.map (algebraMap K[X] K(X)) E.polynomial) X) := by
-             rw [AdjoinRoot.smul_mk,AdjoinRoot.of,AdjoinRoot.mk];simp
-             have or: (q' • X) = (C q') * X := by
-                exact smul_eq_C_mul q'
-             rw [or];aesop
-    rw [hr,smul_eq_mul];apply Field.isSeparable_mul;· apply isSeparable_algebraMap q'
-    have ir: minpoly K(X) (AdjoinRoot.root (Polynomial.map (algebraMap K[X] K(X)) E.polynomial)) =
-             (Polynomial.map (algebraMap K[X] K(X)) E.polynomial) := by
-        rw [AdjoinRoot.minpoly_root]
-        · have pr: (Polynomial.map (algebraMap K[X] K(X)) E.polynomial).leadingCoeff = 1 := by
-            apply Polynomial.Monic.leadingCoeff;apply Polynomial.Monic.map;exact monic_polynomial
-          rw [pr];simp
-        apply Polynomial.map_monic_ne_zero;exact monic_polynomial
-    simp
-    rw [IsSeparable]
+      rw [AdjoinRoot.smul_mk, smul_eq_C_mul]
+      rfl
+    rw [hr,smul_eq_mul]
+    apply Field.isSeparable_mul
+    · apply isSeparable_algebraMap q'
+    have ir : minpoly K(X) (AdjoinRoot.root (Polynomial.map (algebraMap K[X] K(X)) E.polynomial)) =
+        (Polynomial.map (algebraMap K[X] K(X)) E.polynomial) := by
+      rw [AdjoinRoot.minpoly_root]
+      · have pr : (Polynomial.map (algebraMap K[X] K(X)) E.polynomial).leadingCoeff = 1 := by
+          apply Polynomial.Monic.leadingCoeff
+          apply Polynomial.Monic.map
+          exact monic_polynomial
+        rw [pr]
+        simp
+      apply Polynomial.map_monic_ne_zero
+      exact monic_polynomial
+    rw [AdjoinRoot.mk_X, IsSeparable]
     obtain _ | ⟨p, ju, iu⟩ := CharP.exists' K(X)
-    · apply Irreducible.separable;rw [ir]
+    · apply Irreducible.separable
+      rw [ir]
       apply (Polynomial.Monic.irreducible_iff_irreducible_map_fraction_map _).mp
       · exact irreducible_polynomial
       · exact monic_polynomial
     by_cases h2 : p = 2
     · apply coeff_ne_zero_is_separable
-      · rw [ir];apply (Polynomial.Monic.irreducible_iff_irreducible_map_fraction_map _).mp
+      · rw [ir]
+        apply (Polynomial.Monic.irreducible_iff_irreducible_map_fraction_map _).mp
         · exact irreducible_polynomial
         · exact monic_polynomial
-      · have lo : ¬ p ∣ 1:= by rw [h2];exact Nat.two_dvd_ne_zero.mpr rfl
+      · have lo : ¬ p ∣ 1:= by
+          rw [h2]
+          exact Nat.two_dvd_ne_zero.mpr rfl
         exact lo
-      rw [ir];simp
+      rw [ir]
+      simp only [coeff_map, ne_eq, FaithfulSMul.algebraMap_eq_zero_iff]
       rw [polynomial_eq]
       intro zi
-      simp at zi
-      have yu : E.a₁ =0 ∧ E.a₃=0 := by contrapose! zi
-                                       by_cases yu : E.a₁ ≠ 0
-                                       · apply Cubic.ne_zero_of_c_ne_zero;simp;assumption
-                                       · apply Cubic.ne_zero_of_d_ne_zero;simp;apply zi
-                                         push_neg at yu;assumption
+      simp only [Cubic.coeff_eq_c] at zi
+      have yu : E.a₁ = 0 ∧ E.a₃ = 0 := by
+        contrapose! zi
+        by_cases yu : E.a₁ ≠ 0
+        · apply Cubic.ne_zero_of_c_ne_zero
+          simpa
+        · apply Cubic.ne_zero_of_d_ne_zero
+          simp only [ne_eq]
+          apply zi
+          push_neg at yu
+          assumption
       contrapose! yu
-      have gu : CharP K 2 := by apply (Algebra.charP_iff _ K(X) _).mpr; rw [h2] at iu;assumption
+      have gu : CharP K 2 := by
+        apply (Algebra.charP_iff _ K(X) _).mpr
+        rw [h2] at iu
+        assumption
       convert a₁_or_a₃_ne_zero_of_char_two E
       exact imp_iff_not_or
     · apply coeff_ne_zero_is_separable
@@ -441,48 +464,21 @@ instance : Algebra.IsSeparable K(X) E.FunctionField' := by
         apply (Polynomial.Monic.irreducible_iff_irreducible_map_fraction_map _).mp
         · exact irreducible_polynomial
         · exact monic_polynomial
-      · have lo : ¬ p ∣ 2 := by contrapose! h2;symm;apply (Nat.Prime.dvd_iff_eq _ _).mp
-                                · assumption
-                                · exact Nat.prime_two
-                                apply Nat.Prime.ne_one
-                                rw [fact_iff] at ju;assumption
+      · have lo : ¬ p ∣ 2 := by
+          contrapose! h2
+          symm
+          apply (Nat.Prime.dvd_iff_eq _ _).mp
+          · assumption
+          · exact Nat.prime_two
+          apply Nat.Prime.ne_one
+          rw [fact_iff] at ju
+          assumption
         exact lo
-
-      rw [ir];simp
+      rw [ir]
+      simp only [coeff_map, ne_eq, FaithfulSMul.algebraMap_eq_zero_iff]
       rw [polynomial_eq]
       intro zi
       simp at zi
-
-
-
-
-
-
-    -- swap
-    -- · rw [ir]
-    --   apply (separable_def' (Polynomial.map (algebraMap K[X] K(X)) E.polynomial)).mpr
-    --   sorry
-    -- · rw [ir]
-    --   apply (separable_def' (Polynomial.map (algebraMap K[X] K(X)) E.polynomial)).mpr
-    --   use 0,(1:K(X)[X])/((Polynomial.map (algebraMap K[X] K(X))) (C ((C E.a₁) * X + C E.a₃)))
-    --   simp [derivative]
-
-
-
-
-
-
-
-
-
-  --rw [← IntermediateField.isSeparable_adjoin_simple_iff_isSeparable (F:=K(X)) (E:=(AdjoinRoot (Polynomial.map (algebraMap K[X] K(X)) E.polynomial)))]
-
-
-
-
-  /- The generator Y is separable over K(X), since in characteristic 2,
-    a₁ and a₃ cannot both vanish by `a₁_or_a₃_ne_zero_of_char_two`,
-    so the linear term of the minimal polynomial of Y does not vanish. -/
 
 instance : IsDedekindDomain E.CoordinateRing :=
   IsIntegralClosure.isDedekindDomain K[X] K(X) E.FunctionField' E.CoordinateRing
