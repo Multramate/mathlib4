@@ -166,9 +166,12 @@ theorem minpoly_comb (hq : q ≠ 0) :
   · sorry
   · monicity!
 
+omit [IsDomain R] [UniqueFactorizationMonoid R] in
 theorem trace_sq_sub_four_mul_norm :
     E.trace p q ^ 2 - 4 * E.norm p q = q ^ 2 * E.twoTorsionPolynomial.toPoly.toRatFunc := by
-  sorry
+    unfold trace norm twoTorsionPolynomial Cubic.toPoly b₂ b₄ b₆
+    simp only [Polynomial.toRatFunc, map_add, map_mul, map_pow, map_ofNat]
+    ring
 
 theorem isIntegral_of_sq_sub_mem_range {R A} [CommRing R] [Ring A] [Algebra R A] {r₀ r₁ : R} {a : A}
     (h : a ^ 2 - algebraMap R A r₁ * a - algebraMap R A r₀ ∈ (algebraMap R A).range) :
