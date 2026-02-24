@@ -253,8 +253,9 @@ theorem a₁_or_a₃_ne_zero_of_char_two : E.a₁ ≠ 0 ∨ E.a₃ ≠ 0 := by
   rw [Δ_of_char_two, h.left, h.right]
   ring1
 
+omit [WeierstrassCurve.IsElliptic E] in
 theorem trace_eq_of_char_two : E.trace p q = q * (C E.a₁ * X + C E.a₃).toRatFunc := by
-  sorry
+  simp [trace, CharTwo.two_eq_zero, CharTwo.neg_eq]
 
 include int
 
