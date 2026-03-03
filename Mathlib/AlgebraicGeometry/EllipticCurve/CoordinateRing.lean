@@ -284,14 +284,23 @@ theorem right_mem_of_isIntegral_of_isCharTwoJNeZeroNF [E.IsCharTwoJNeZeroNF] :
   have ⟨N, hN⟩ := E.norm_mem_of_isIntegral int
   have hN : pX ^ 2 + pX * qX * X + qX ^ 2 * (X ^ 3 + C E.a₂ * X ^ 2 + C E.a₆) = X ^ 2 * N := by
     sorry -- X² times the definition of norm
-  have : pX.coeff 0 ^ 2 + qX.coeff 0 ^ 2 * E.a₆ = 0 := by
+  have hsq : pX.coeff 0 ^ 2 + qX.coeff 0 ^ 2 * E.a₆ = 0 := by
     have := congr_arg (·.coeff 0) hN -- compare the constant term of the two sides of hN
     sorry
-  have : pX.coeff 0 * qX.coeff 0 = 0 := by
+  have hpx : pX.coeff 0 * qX.coeff 0 = 0 := by
     have := congr_arg (·.coeff 1) hN -- compare the X coefficient of the two sides of hN
     sorry -- We are in characteristic 2, so f² has no linear term for any polynomial f.
-  have hp0 : pX.coeff 0 = 0 := sorry
-  have hq0 : qX.coeff 0 = 0 := sorry
+  have hp0 : pX.coeff 0 = 0 := by
+    rcases mul_eq_zero.mp hpx with h1 | h2
+    · exact h1
+    · rw [h2, zero_pow two_ne_zero, zero_mul, add_zero, sq_eq_zero_iff] at hsq
+      exact hsq
+  have hq0 : qX.coeff 0 = 0 := by
+    rw [hp0, zero_pow two_ne_zero, zero_add] at hsq
+    rcases mul_eq_zero.mp hsq with h1 | h2
+    · rw [sq_eq_zero_iff] at h1
+      exact h1
+    · exact absurd h2 (by rw [← Δ_of_isCharTwoJNeZeroNF_of_char_two]; exact E.isUnit_Δ.ne_zero)
   refine ⟨qX.divX, mul_right_cancel₀ toRatFunc_X_ne_zero ?_⟩
   conv_rhs => rw [← hq, ← qX.divX_mul_X_add, hq0, C_0, add_zero, map_mul]
 
