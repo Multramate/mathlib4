@@ -92,6 +92,10 @@ abbrev Polynomial.toRatFunc {R} [CommRing R] : R[X] →+* FractionRing R[X] :=
 lemma Polynomial.toRatFunc_X_ne_zero {R} [CommRing R] [Nontrivial R] : (X : R[X]).toRatFunc ≠ 0 :=
   by simp
 
+lemma Polynomial.coeff_sq_of_odd {R : Type*} [CommSemiring R] [CharP R 2]
+    (f : R[X]) {n : ℕ} (hn : ¬ 2 ∣ n) : (f ^ 2).coeff n = 0 := by
+  rw [← map_frobenius_expand, coeff_map, coeff_expand two_pos, if_neg hn, map_zero]
+
 namespace WeierstrassCurve
 
 def Affine.CoordinateRing.variableChange {R} [CommRing R] (W : WeierstrassCurve.Affine R)
@@ -265,7 +269,17 @@ include int
 /- If a₁ = 0, then a₃ ≠ 0 by `a₁_or_a₃_ne_zero_of_char_two`, and Tr(p+qY) = a₃q ∈ K[X],
 so q ∈ K[X]. -/
 theorem right_mem_of_isIntegral_of_a₁_ne_zero (h : E.a₁ = 0) : q ∈ toRatFunc.range := by
-  sorry
+  have : E.a₃ ≠ 0 := by
+    rcases a₁_or_a₃_ne_zero_of_char_two E with (h1 | h3)
+    · exact absurd h h1
+    · exact h3
+  have hmem := trace_mem_of_isIntegral E int
+  simp only [trace, CharTwo.two_eq_zero, zero_mul, h, C_0, zero_add, zero_sub, neg_mem_iff,
+    RingHom.mem_range] at hmem
+  rcases hmem with ⟨x, hx⟩
+  refine ⟨C E.a₃⁻¹ * x, ?_⟩
+  rw [map_mul, hx, mul_comm (toRatFunc (C E.a₃⁻¹)), mul_assoc, ← map_mul, ← Polynomial.C_mul,
+    mul_inv_cancel₀ this, C_1, map_one, mul_one]
 
 /- If a₁ ≠ 0, we may assume it is in normal form, so that a₁ = 1 and a₃ = a₄ = 0, and
 a₆ = Δ ≠ 0 by `Δ_of_isCharTwoJNeZeroNF_of_char_two`.
@@ -274,9 +288,23 @@ integrally closed. -/
 theorem right_mem_of_isIntegral_of_isCharTwoJNeZeroNF [E.IsCharTwoJNeZeroNF] :
     q ∈ toRatFunc.range := by
   have hq : q * X.toRatFunc ∈ toRatFunc.range := by
-    sorry -- we have Tr(p+qY) = qX in this case, so just use `trace_eq_of_char_two`
+    have hmem := trace_mem_of_isIntegral E int
+    rw [trace_eq_of_char_two, a₁_of_isCharTwoJNeZeroNF, a₃_of_isCharTwoJNeZeroNF,
+      C_0, C_1, add_zero, one_mul] at hmem
+    trivial
+    -- we have Tr(p+qY) = qX in this case, so just use `trace_eq_of_char_two`
   have : IsIntegral K[X] (p * X.toRatFunc) := by
-    sorry -- Since `E.norm p q ∈ K[X]`, we have `X² * E.norm p q ∈ K[X]` as well.
+    rcases hq with ⟨qX, hqX⟩
+    rcases norm_mem_of_isIntegral E int with ⟨N, hN⟩
+    apply isIntegral_of_sq_sub_mem_range
+      (r₁ := qX * X) (r₀ := qX ^ 2 * (X ^ 3 + C E.a₂ * X ^ 2 + C E.a₆))
+    refine ⟨X ^ 2 * N, ?_⟩
+    simp only [map_mul, map_pow, map_add]
+    rw [hqX, hN, norm, a₁_of_isCharTwoJNeZeroNF, a₃_of_isCharTwoJNeZeroNF,
+      a₄_of_isCharTwoJNeZeroNF, C_0, C_1, one_mul, add_zero, zero_mul, add_zero]
+    simp only [map_add, map_mul, map_pow]
+    ring
+    -- Since `E.norm p q ∈ K[X]`, we have `X² * E.norm p q ∈ K[X]` as well.
     -- Expand the definition of norm, and apply `isIntegral_of_sq_add_mem_range`
   have ⟨pX, hp⟩ : p * X.toRatFunc ∈ toRatFunc.range := by
     sorry -- since K[X] is integrally closed
@@ -285,11 +313,31 @@ theorem right_mem_of_isIntegral_of_isCharTwoJNeZeroNF [E.IsCharTwoJNeZeroNF] :
   have hN : pX ^ 2 + pX * qX * X + qX ^ 2 * (X ^ 3 + C E.a₂ * X ^ 2 + C E.a₆) = X ^ 2 * N := by
     sorry -- X² times the definition of norm
   have hsq : pX.coeff 0 ^ 2 + qX.coeff 0 ^ 2 * E.a₆ = 0 := by
-    have := congr_arg (·.coeff 0) hN -- compare the constant term of the two sides of hN
-    sorry
+    have := congr_arg (Polynomial.eval (0:K)) hN -- compare the constant term of the two sides of hN
+    simp only [eval_add, eval_mul, eval_pow, eval_X, eval_C] at this
+    simp only [zero_pow two_ne_zero, zero_pow three_ne_zero, zero_mul, mul_zero,
+      zero_add, add_zero] at this
+    simp only [← Polynomial.coeff_zero_eq_eval_zero] at this
+    exact this
   have hpx : pX.coeff 0 * qX.coeff 0 = 0 := by
     have := congr_arg (·.coeff 1) hN -- compare the X coefficient of the two sides of hN
-    sorry -- We are in characteristic 2, so f² has no linear term for any polynomial f.
+    dsimp only at this
+    simp only [coeff_add, coeff_mul] at this
+    simp only [Finset.Nat.antidiagonal_succ, Finset.Nat.antidiagonal_zero,
+      Finset.sum_cons] at this
+    simp only [Nat.dvd_one, OfNat.ofNat_ne_one, not_false_eq_true,
+      coeff_sq_of_odd, Finset.sum_singleton, zero_add,
+      coeff_X_one, mul_one, Finset.map_singleton,
+      Function.Embedding.coe_prodMap,
+      Function.Embedding.coeFn_mk, Prod.map_apply,
+      Nat.succ_eq_add_one, Function.Embedding.refl_apply,
+      coeff_X_zero, mul_zero, add_zero, coeff_X_pow,
+      OfNat.one_ne_ofNat, ↓reduceIte, coeff_C_zero,
+      mul_ite, OfNat.zero_ne_ofNat, coeff_C_succ,
+      Finset.antidiagonal_zero, zero_mul, ite_mul,
+      one_mul, mul_eq_zero] at this
+    exact mul_eq_zero.mpr this
+ -- We are in characteristic 2, so f² has no linear term for any polynomial f.
   have hp0 : pX.coeff 0 = 0 := by
     rcases mul_eq_zero.mp hpx with h1 | h2
     · exact h1
