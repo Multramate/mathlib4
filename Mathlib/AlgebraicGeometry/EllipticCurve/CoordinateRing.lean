@@ -142,7 +142,16 @@ theorem isIntegral_coordinateRing_iff {f : E.FunctionField'} :
 -- this deals with the q = 0 case
 theorem isIntegral_algebraMap_iff {p : R(X)} :
     IsIntegral R[X] (algebraMap _ E.FunctionField' p) ↔ p ∈ toRatFunc.range := by
-  sorry
+  constructor
+  · intro hA
+    have : IsIntegral R[X] p :=
+      (isIntegral_algHom_iff (IsScalarTower.toAlgHom R[X] R(X) E.FunctionField')
+        (FaithfulSMul.algebraMap_injective R(X) E.FunctionField')).mp hA
+    exact (isIntegrallyClosed_iff R(X)).mp inferInstance this
+  · intro hB
+    rcases hB with ⟨g, hg⟩
+    rw [← hg, ←IsScalarTower.algebraMap_apply]
+    exact isIntegral_algebraMap
 
 variable (p q : R(X))
 
@@ -188,15 +197,66 @@ theorem isIntegral_of_sq_sub_mem_range {R A} [CommRing R] [Ring A] [Algebra R A]
 with coefficients in R[X], so p is integral over R[X] and therefore in R[X]. -/
 theorem left_mem_of_right_mem_of_norm_mem (hq : q ∈ toRatFunc.range)
     (hn : E.norm p q ∈ toRatFunc.range) : p ∈ toRatFunc.range := by
-  sorry -- obtain from hq, rewrite E.norm, then apply `isIntegral_of_sq_add_mem_range`
+  obtain ⟨q', rfl⟩ := hq
+  rw [norm] at hn
+  exact (isIntegrallyClosed_iff R(X)).mp inferInstance <|
+    isIntegral_of_sq_sub_mem_range
+      (r₁ := q' * (C E.a₁ * X + C E.a₃))
+      (r₀ := q' ^ 2 * (X ^ 3 + C E.a₂ * X ^ 2 + C E.a₄ * X + C E.a₆))
+      (by convert hn using 1; simp [Polynomial.toRatFunc]; ring)
 
 theorem trace_mem_of_isIntegral {p q : R(X)} (int : IsIntegral R[X] <| E.comb p q) :
     E.trace p q ∈ toRatFunc.range := by
-  sorry -- use minpoly.isIntegrallyClosed_eq_field_fractions'
+  by_cases hq : q = 0
+  · -- q = 0: comb p 0 = algebraMap _ _ p, so p ∈ range, hence trace = 2p ∈ range
+    subst hq
+    have hp : p ∈ toRatFunc.range := by
+      have : E.comb p 0 = algebraMap _ _ p := by simp [comb, Algebra.smul_def]
+      rw [this] at int
+      exact (isIntegral_algebraMap_iff E).mp int
+    rcases hp with ⟨f, rfl⟩
+    simp only [trace]
+    exact ⟨2 * f, by simp [Polynomial.toRatFunc, map_ofNat]⟩
+  · -- q ≠ 0: use minpoly_comb and isIntegrallyClosed_eq_field_fractions'
+    have h_min := E.minpoly_comb p q hq
+    have h_eq := minpoly.isIntegrallyClosed_eq_field_fractions' R(X) int
+    rw [h_min] at h_eq
+    -- The degree-1 coefficient of X² - C(trace) * X + C(norm) is -trace
+    -- and the degree-1 coefficient of (minpoly R[X] _).map toRatFunc is in toRatFunc.range
+    have hmem : -(E.trace p q) ∈ toRatFunc.range := by
+      refine ⟨(minpoly R[X] (E.comb p q)).coeff 1, ?_⟩
+      have := congr_arg (·.coeff 1) h_eq
+      simp only [coeff_sub, coeff_add, coeff_C_mul, coeff_X_one,
+        coeff_map, coeff_X_pow, coeff_C, one_ne_zero,
+        OfNat.one_ne_ofNat, ↓reduceIte, zero_sub, add_zero, mul_one] at this ⊢
+      exact this.symm
+    rcases hmem with ⟨f, hf⟩
+    exact ⟨-f, by simp [map_neg, hf]⟩
 
 theorem norm_mem_of_isIntegral {p q : R(X)} (int : IsIntegral R[X] <| E.comb p q) :
     E.norm p q ∈ toRatFunc.range := by
-  sorry -- ditto
+  by_cases hq : q = 0
+  · -- q = 0: norm p 0 = p², and p ∈ range
+    subst hq
+    have hp : p ∈ toRatFunc.range := by
+      have : E.comb p 0 = algebraMap _ _ p := by simp [comb, Algebra.smul_def]
+      rw [this] at int
+      exact (isIntegral_algebraMap_iff E).mp int
+    rcases hp with ⟨f, rfl⟩
+    simp only [norm, mul_zero, sub_zero, zero_mul]
+    exact ⟨f ^ 2, by simp [Polynomial.toRatFunc]⟩
+  · -- q ≠ 0: use minpoly_comb and isIntegrallyClosed_eq_field_fractions'
+    have h_min := E.minpoly_comb p q hq
+    have h_eq := minpoly.isIntegrallyClosed_eq_field_fractions' R(X) int
+    rw [h_min] at h_eq
+    -- The degree-0 coefficient of X² - C(trace) * X + C(norm) is norm
+    -- and the degree-0 coefficient of (minpoly R[X] _).map toRatFunc is in toRatFunc.range
+    refine ⟨(minpoly R[X] (E.comb p q)).coeff 0, ?_⟩
+    have := congr_arg (·.coeff 0) h_eq
+    simp only [coeff_sub, coeff_add, coeff_X_pow, coeff_C_mul, coeff_C,
+      coeff_map, coeff_X_zero, show (0 : ℕ) = 2 ↔ False from by decide,
+      ↓reduceIte, mul_zero, sub_zero, zero_add] at this
+    exact this.symm
 
 variable {K : Type*} [Field K] (E : Affine K) {p q : K(X)} (int : IsIntegral K[X] <| E.comb p q)
 
@@ -307,11 +367,16 @@ theorem right_mem_of_isIntegral_of_isCharTwoJNeZeroNF [E.IsCharTwoJNeZeroNF] :
     -- Since `E.norm p q ∈ K[X]`, we have `X² * E.norm p q ∈ K[X]` as well.
     -- Expand the definition of norm, and apply `isIntegral_of_sq_add_mem_range`
   have ⟨pX, hp⟩ : p * X.toRatFunc ∈ toRatFunc.range := by
-    sorry -- since K[X] is integrally closed
+    exact (isIntegrallyClosed_iff K(X)).mp inferInstance this
   have ⟨qX, hq⟩ := hq
   have ⟨N, hN⟩ := E.norm_mem_of_isIntegral int
   have hN : pX ^ 2 + pX * qX * X + qX ^ 2 * (X ^ 3 + C E.a₂ * X ^ 2 + C E.a₆) = X ^ 2 * N := by
-    sorry -- X² times the definition of norm
+    apply_fun toRatFunc using IsFractionRing.injective K[X] K(X)
+    simp only [map_add, map_mul, map_pow]
+    rw [hp, hq, hN, norm, a₁_of_isCharTwoJNeZeroNF, a₃_of_isCharTwoJNeZeroNF,
+      a₄_of_isCharTwoJNeZeroNF, C_0, C_1, one_mul, add_zero, zero_mul, add_zero]
+    simp only [map_add, map_mul, map_pow, CharTwo.sub_eq_add]
+    ring
   have hsq : pX.coeff 0 ^ 2 + qX.coeff 0 ^ 2 * E.a₆ = 0 := by
     have := congr_arg (Polynomial.eval (0:K)) hN -- compare the constant term of the two sides of hN
     simp only [eval_add, eval_mul, eval_pow, eval_X, eval_C] at this
