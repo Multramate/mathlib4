@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: David Kurniadi Angdinata, Sriram Chinthalagiri Venkata, Junyan Xu
 -/
 import Mathlib.Algebra.Module.LocalizedModule.Exact
+import Mathlib.Algebra.Polynomial.SpecificDegree
 import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
 import Mathlib.FieldTheory.SeparableDegree
@@ -167,16 +168,92 @@ def norm : R(X) :=
 
 -- An arbitrary element of the function field can be written in the form p(X) + q(X)Y
 theorem FunctionField'.exists_comb_eq (f : E.FunctionField') : ∃ p q : R(X), E.comb p q = f := by
-  sorry
-  -- mimic the proof of `CoordinateRing.exists_smul_basis_eq`
-  -- may need to develop some basis API
+  have hmonic : (E.polynomial.map (algebraMap R[X] R(X))).Monic := monic_polynomial.map _
+  have hnd : (E.polynomial.map (algebraMap R[X] R(X))).natDegree = 2 :=
+    (monic_polynomial.natDegree_map _).trans natDegree_polynomial
+  let b := (AdjoinRoot.powerBasis' hmonic).basis.reindex (finCongr hnd)
+  have h := b.sum_repr f
+  rw [Fin.sum_univ_succ, Fin.sum_univ_one, Fin.succ_zero_eq_one] at h
+  have hb0 : b 0 = 1 := by
+    simp only [b, Module.Basis.reindex_apply, PowerBasis.basis_eq_pow, finCongr_symm,
+      finCongr_apply_coe, Fin.val_zero, pow_zero]
+  have hb1 : b 1 = AdjoinRoot.mk _ X := by
+    simp only [b, Module.Basis.reindex_apply, PowerBasis.basis_eq_pow, finCongr_symm,
+      finCongr_apply_coe, Fin.val_one, pow_one, AdjoinRoot.powerBasis'_gen, AdjoinRoot.root]
+  rw [hb0, hb1] at h
+  exact ⟨_, _, h⟩
+
+private lemma comb_eq_mk :
+    E.comb p q = AdjoinRoot.mk (E.polynomial.map (algebraMap R[X] R(X))) (C p + C q * X) := by
+  simp [comb, Algebra.smul_def, AdjoinRoot.algebraMap_eq]
+
+omit [IsDomain R] [UniqueFactorizationMonoid R] in
+private lemma aeval_mk_eq {f g h : R(X)[X]} :
+    aeval (AdjoinRoot.mk f h) g = AdjoinRoot.mk f (g.eval₂ C h) := by
+  rw [aeval_def, show algebraMap R(X) (AdjoinRoot f) = (AdjoinRoot.mk f).comp C from rfl,
+    ← hom_eval₂ g C (AdjoinRoot.mk f) h]
+
+omit [IsDomain R] [UniqueFactorizationMonoid R] in
+private lemma poly_factor :
+    (X ^ 2 - C (E.trace p q) * X + C (E.norm p q)).eval₂ C (C p + C q * X) =
+    C (q ^ 2) * E.polynomial.map (algebraMap R[X] R(X)) := by
+  simp only [trace, norm, polynomial, Polynomial.toRatFunc]
+  simp only [eval₂_add, eval₂_sub, eval₂_mul, eval₂_pow, eval₂_C, eval₂_X]
+  simp only [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_mul, Polynomial.map_pow,
+    Polynomial.map_C, Polynomial.map_X]
+  simp only [map_add, map_sub, map_mul, map_pow, map_ofNat]
+  ring
 
 -- If q ≠ 0, the minimal polynomial of f = p + qY is quadratic, given by Z² - Tr(f)Z + N(f).
 theorem minpoly_comb (hq : q ≠ 0) :
     minpoly R(X) (E.comb p q) = X ^ 2 - C (E.trace p q) * X + C (E.norm p q) := by
   refine (minpoly.eq_of_irreducible_of_monic ?_ ?_ ?_).symm
-  · sorry
-  · sorry
+  · -- Goal 1: Irreducible (X ^ 2 - C (E.trace p q) * X + C (E.norm p q))
+    have hnd : (X ^ 2 - C (E.trace p q) * X + C (E.norm p q) : R(X)[X]).natDegree = 2 := by
+      convert natDegree_quadratic (R := R(X)) (a := 1) (b := -(E.trace p q))
+        (c := E.norm p q) one_ne_zero using 2
+      simp only [map_neg, one_mul, C_1]; ring
+    refine Polynomial.irreducible_of_degree_le_three_of_not_isRoot
+      (by rw [Finset.mem_Icc]; omega) ?_
+    -- If α were a root, comb p q ∈ range(algebraMap), contradicting degree considerations.
+    intro α hα
+    rw [IsRoot] at hα
+    simp only [eval_add, eval_sub, eval_mul, eval_pow, eval_X, eval_C] at hα
+    have hfactor : (X ^ 2 - C (E.trace p q) * X + C (E.norm p q) : R(X)[X]) =
+        (X - C α) * (X - C (E.trace p q - α)) := by
+      have hnorm : E.norm p q = α * (E.trace p q - α) := by linear_combination hα
+      rw [hnorm, map_mul, map_sub]; ring
+    have haeval : aeval (E.comb p q) (X ^ 2 - C (E.trace p q) * X + C (E.norm p q)) = 0 := by
+      rw [E.comb_eq_mk p q, aeval_mk_eq, poly_factor, map_mul, AdjoinRoot.mk_self, mul_zero]
+    rw [hfactor, map_mul] at haeval
+    -- One factor is zero, so comb p q = algebraMap _ _ (some root)
+    have hmem : E.comb p q ∈ (algebraMap R(X) E.FunctionField').range := by
+      rcases mul_eq_zero.mp haeval with h | h
+      · exact ⟨α, eq_comm.mp
+          (by simpa only [aeval_def, eval₂_sub, eval₂_X, eval₂_C, sub_eq_zero] using h)⟩
+      · exact ⟨E.trace p q - α, eq_comm.mp
+          (by simpa only [aeval_def, eval₂_sub, eval₂_X, eval₂_C, sub_eq_zero] using h)⟩
+    -- But comb p q ∉ range(algebraMap): polynomial has degree 2, C p + C q * X has degree ≤ 1
+    rcases hmem with ⟨r, hr⟩
+    rw [comb_eq_mk] at hr
+    have hdvd : E.polynomial.map (algebraMap R[X] R(X)) ∣ C p + C q * X - C r := by
+      rw [← AdjoinRoot.mk_eq_zero, map_sub, sub_eq_zero]
+      change AdjoinRoot.mk _ (C p + C q * X) = AdjoinRoot.of _ r
+      exact hr.symm
+    have hne : (C p + C q * X - C r : R(X)[X]) ≠ 0 := by
+      intro h; apply hq
+      have : (C p + C q * X - C r).coeff 1 = 0 := by rw [h]; simp
+      simpa [coeff_sub, coeff_add, coeff_C, coeff_mul_X] using this
+    have hle : (C p + C q * X - C r : R(X)[X]).natDegree ≤ 1 := by
+      have heq : C p + C q * X - C r = C q * X + C (p - r) := by simp only [map_sub]; ring
+      rw [heq]
+      refine (natDegree_add_le _ _).trans (max_le ?_ ((natDegree_C _).le.trans (by norm_num)))
+      simpa [pow_one] using natDegree_C_mul_X_pow_le q 1
+    have : (E.polynomial.map (algebraMap R[X] R(X))).natDegree = 2 :=
+      (monic_polynomial.natDegree_map _).trans natDegree_polynomial
+    exact absurd (natDegree_le_of_dvd hdvd hne) (by omega)
+  · -- Goal 2: aeval (E.comb p q) (X ^ 2 - C (E.trace p q) * X + C (E.norm p q)) = 0
+    rw [E.comb_eq_mk p q, aeval_mk_eq, poly_factor, map_mul, AdjoinRoot.mk_self, mul_zero]
   · monicity!
 
 omit [IsDomain R] [UniqueFactorizationMonoid R] in
