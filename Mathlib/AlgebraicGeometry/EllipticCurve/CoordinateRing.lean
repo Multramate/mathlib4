@@ -99,9 +99,251 @@ lemma Polynomial.coeff_sq_of_odd {R : Type*} [CommSemiring R] [CharP R 2]
 
 namespace WeierstrassCurve
 
+section VariableChangeAPI
+
+variable {R : Type*} [CommRing R] (W : WeierstrassCurve.Affine R) (e : VariableChange R)
+
+open scoped Bivariate
+
+-- The forward substitution applied to the Weierstrass polynomial gives u⁶ times the transformed
+-- Weierstrass polynomial. The proof expands both sides, eliminates u⁻¹ using u * u⁻¹ = 1 at the
+-- R level, then closes with ring.
+lemma Affine.variableChange_polynomial : let u : R := e.u;
+    W.polynomial.eval₂
+      ((C : R[X] →+* R[X][Y]).comp (Polynomial.aeval (C u ^ 2 * X + C e.r)).toRingHom)
+      (C (C (u ^ 3)) * Y + C (C (u ^ 2 * e.s) * X + C e.t)) =
+    C (C (u ^ 6)) * (e • W).polynomial := by
+  intro u
+  set ui : R := ↑e.u⁻¹
+  -- Expand polynomial and variableChange definitions, then eval₂
+  simp only [Affine.polynomial, variableChange_def]
+  simp only [eval₂_sub, eval₂_add, eval₂_mul, eval₂_pow, eval₂_C, eval₂_X,
+    RingHom.comp_apply, AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom,
+    map_add, map_sub, map_mul, map_pow, map_ofNat,
+    Polynomial.aeval_C, Polynomial.aeval_X]
+  simp only [← C_eq_algebraMap]
+  -- Normalize both sides to sums of monomials in C(C u), C(C ui), C(C ...), C X, Y
+  ring_nf
+  -- Fold ↑e.u⁻¹ back to ui (ring_nf unfolds set definitions)
+  conv_rhs => simp only [show (↑e.u⁻¹ : R) = ui from rfl]
+  -- Establish C(C u) * C(C ui) = 1 and collapse C(C u)^6 * C(C ui)^k → C(C u)^(6-k)
+  have hCCu : (C (C u) : R[X][Y]) * C (C ui) = 1 := by
+    rw [← C_mul, ← C_mul, e.u.mul_inv, map_one, map_one]
+  -- Eliminate all C(C ui)^k terms via linear_combination with pow_mul_pow_eq_one
+  linear_combination
+    -(Y * C (C e.s) * C X * 2 + Y * C X * C (C W.a₁)) *
+      C (C u) ^ 5 * hCCu -
+    (C (C e.s) * C X ^ 2 * C (C W.a₁) + C (C e.s) ^ 2 * C X ^ 2 -
+      C X ^ 2 * C (C e.r) * 3 - C X ^ 2 * C (C W.a₂)) *
+      C (C u) ^ 4 * pow_mul_pow_eq_one 2 hCCu -
+    (Y * C (C e.t) * 2 + Y * C (C W.a₁) * C (C e.r) + Y * C (C W.a₃)) *
+      C (C u) ^ 3 * pow_mul_pow_eq_one 3 hCCu -
+    (C (C e.s) * C X * C (C e.t) * 2 + C (C e.s) * C X * C (C W.a₁) * C (C e.r) +
+      C (C e.s) * C X * C (C W.a₃) + C X * C (C e.t) * C (C W.a₁) -
+      C X * C (C e.r) * C (C W.a₂) * 2 - C X * C (C e.r) ^ 2 * 3 - C X * C (C W.a₄)) *
+      C (C u) ^ 2 * pow_mul_pow_eq_one 4 hCCu -
+    (C (C e.t) * C (C W.a₁) * C (C e.r) + C (C e.t) * C (C W.a₃) + C (C e.t) ^ 2 -
+      C (C e.r) * C (C W.a₄) - C (C e.r) ^ 2 * C (C W.a₂) - C (C e.r) ^ 3 - C (C W.a₆)) *
+      pow_mul_pow_eq_one 6 hCCu
+
+/-- The inverse substitution applied to the transformed Weierstrass polynomial gives
+`u⁻⁶` times the original polynomial. -/
+lemma Affine.variableChange_polynomial_inv : let ui : R := ↑e.u⁻¹;
+    (e • W).polynomial.eval₂
+      ((C : R[X] →+* R[X][Y]).comp
+        (Polynomial.aeval (C (ui ^ 2) * X + C (-e.r * ui ^ 2))).toRingHom)
+      (C (C (ui ^ 3)) * Y +
+        C (C (-e.s * ui ^ 3) * X + C ((e.r * e.s - e.t) * ui ^ 3))) =
+    C (C (ui ^ 6)) * W.polynomial := by
+  intro ui
+  set u : R := ↑e.u
+  simp only [Affine.polynomial]
+  simp only [eval₂_sub, eval₂_add, eval₂_mul, eval₂_pow, eval₂_C, eval₂_X,
+    RingHom.comp_apply, AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom,
+    map_add, map_sub, map_mul, map_pow, map_neg,
+    Polynomial.aeval_C, Polynomial.aeval_X]
+  simp only [← C_eq_algebraMap]
+  simp only [variableChange_def]
+  simp only [map_add, map_sub, map_mul, map_pow, map_ofNat]
+  conv => simp only [show (↑e.u⁻¹ : R) = ui from rfl]
+  ring_nf
+
+/-- Composing the forward and inverse X-substitutions gives the identity. -/
+lemma Affine.variableChange_aeval_comp : let u : R := e.u; let ui : R := ↑e.u⁻¹;
+    Polynomial.aeval (C u ^ 2 * X + C e.r)
+      (C (ui ^ 2) * X + C (-e.r * ui ^ 2)) = (X : R[X]) := by
+  intro u ui
+  simp only [map_add, map_mul, map_neg, Polynomial.aeval_C, Polynomial.aeval_X]
+  simp only [← C_eq_algebraMap]
+  have hui2 : C (ui ^ 2) * C u ^ 2 = (1 : R[X]) := by
+    simp only [← C_pow, ← C_mul, ← C_1]; exact congr_arg C (pow_mul_pow_eq_one 2 e.u.inv_mul)
+  linear_combination hui2 * X
+
+/-- Composing the inverse and forward X-substitutions gives the identity. -/
+lemma Affine.variableChange_aeval_comp_inv : let u : R := e.u; let ui : R := ↑e.u⁻¹;
+    Polynomial.aeval (C (ui ^ 2) * X + C (-e.r * ui ^ 2))
+      (C u ^ 2 * X + C e.r) = (X : R[X]) := by
+  intro u ui
+  simp only [map_add, map_mul, map_neg, map_pow, Polynomial.aeval_C, Polynomial.aeval_X]
+  simp only [← C_eq_algebraMap, ← C_pow]
+  have hu2 : C (u ^ 2) * C (ui ^ 2) = (1 : R[X]) := by
+    rw [← C_mul, ← C_1]; exact congr_arg C (pow_mul_pow_eq_one 2 e.u.mul_inv)
+  linear_combination hu2 * X - hu2 * C e.r
+
+end VariableChangeAPI
+
+private lemma mul_root_add_cancel {T : Type*} [CommRing T] {p : T[X]}
+    {a b c d : AdjoinRoot p} (hab : a * b = 1) (hcd : a * c + d = 0) :
+    a * (b * AdjoinRoot.root p + c) + d = AdjoinRoot.root p := by
+  linear_combination hab * AdjoinRoot.root p + hcd
+
 def Affine.CoordinateRing.variableChange {R} [CommRing R] (W : WeierstrassCurve.Affine R)
     (e : VariableChange R) : W.CoordinateRing ≃ₐ[R] (e • W).CoordinateRing := by
-  sorry /- The isomorphism is given by `(X, Y) ↔ (u²X + r, u³Y + u²sX + t)`. -/
+  /- The isomorphism sends (X, Y) ↔ (u²X + r, u³Y + u²sX + t).
+     Built via AdjoinRoot.liftAlgHom in both directions, combined with AlgEquiv.ofAlgHom. -/
+  let u : R := e.u
+  let ui : R := ↑e.u⁻¹
+  -- Forward map: X ↦ u²X' + r, Y ↦ u³Y' + u²sX' + t
+  let ι : R[X] →ₐ[R] (e • W).CoordinateRing :=
+    (IsScalarTower.toAlgHom R R[X] _).comp (Polynomial.aeval (C u ^ 2 * X + C e.r))
+  let η : (e • W).CoordinateRing :=
+    algebraMap R[X] _ (C (u ^ 3)) * AdjoinRoot.root _ +
+    algebraMap R[X] _ (C (u ^ 2 * e.s) * X + C e.t)
+  have hf : W.polynomial.eval₂ ι η = 0 := by
+    rw [show (↑ι : R[X] →+* _) = (AdjoinRoot.mk (e • W).polynomial).comp
+        ((C : R[X] →+* R[X][Y]).comp (Polynomial.aeval (C u ^ 2 * X + C e.r)).toRingHom) from rfl,
+      show η = (AdjoinRoot.mk (e • W).polynomial)
+        (C (C (u ^ 3)) * Y + C (C (u ^ 2 * e.s) * X + C e.t)) from by
+        simp only [η, map_add, map_mul, ← AdjoinRoot.mk_X]; rfl,
+      ← Polynomial.hom_eval₂, Affine.variableChange_polynomial,
+      map_mul, AdjoinRoot.mk_self, mul_zero]
+  -- Backward map: X' ↦ u⁻²X - ru⁻², Y' ↦ u⁻³Y + (-su⁻³)X + (rs-t)u⁻³
+  let ι' : R[X] →ₐ[R] W.CoordinateRing :=
+    (IsScalarTower.toAlgHom R R[X] _).comp (Polynomial.aeval (C (ui ^ 2) * X + C (-e.r * ui ^ 2)))
+  let η' : W.CoordinateRing :=
+    algebraMap R[X] _ (C (ui ^ 3)) * AdjoinRoot.root _ +
+    algebraMap R[X] _ (C (-e.s * ui ^ 3) * X + C ((e.r * e.s - e.t) * ui ^ 3))
+  have hb : (e • W).polynomial.eval₂ ι' η' = 0 := by
+    rw [show (↑ι' : R[X] →+* _) = (AdjoinRoot.mk W.polynomial).comp
+        ((C : R[X] →+* R[X][Y]).comp
+          (Polynomial.aeval (C (ui ^ 2) * X + C (-e.r * ui ^ 2))).toRingHom) from rfl,
+      show η' = (AdjoinRoot.mk W.polynomial)
+        (C (C (ui ^ 3)) * Y +
+          C (C (-e.s * ui ^ 3) * X + C ((e.r * e.s - e.t) * ui ^ 3))) from by
+        simp only [η', map_add, map_mul, ← AdjoinRoot.mk_X]; rfl,
+      ← Polynomial.hom_eval₂, Affine.variableChange_polynomial_inv,
+      map_mul, AdjoinRoot.mk_self, mul_zero]
+  let φ := AdjoinRoot.liftAlgHom W.polynomial ι η hf
+  let ψ := AdjoinRoot.liftAlgHom (e • W).polynomial ι' η' hb
+  exact AlgEquiv.ofAlgHom φ ψ
+    (by -- φ ∘ ψ = id on (e • W).CoordinateRing
+        apply AdjoinRoot.algHom_ext'
+        · apply Polynomial.algHom_ext
+          change φ (ψ (AdjoinRoot.of _ X)) = AdjoinRoot.of _ X
+          simp only [φ, ψ, AdjoinRoot.liftAlgHom_of, ι, ι', AlgHom.comp_apply,
+            IsScalarTower.toAlgHom_apply, Polynomial.aeval_X]
+          rw [show (algebraMap R[X] W.CoordinateRing) = AdjoinRoot.of W.polynomial from rfl,
+            AdjoinRoot.liftAlgHom_of]
+          simp only [AlgHom.comp_apply, IsScalarTower.toAlgHom_apply]
+          congr 1
+          exact Affine.variableChange_aeval_comp (e := e)
+        · simp only [AlgHom.comp_apply, AlgHom.id_apply, ψ, AdjoinRoot.liftAlgHom_root, η']
+          simp only [φ, map_add, map_mul, AdjoinRoot.liftAlgHom_root,
+            η, ι, map_neg, map_pow, map_sub]
+          rw [show (algebraMap R[X] (AdjoinRoot W.polynomial)) =
+            AdjoinRoot.of W.polynomial from rfl]
+          simp only [AdjoinRoot.liftAlgHom_of, ι, AlgHom.comp_apply,
+            IsScalarTower.toAlgHom_apply, map_add, map_mul, map_pow,
+            Polynomial.aeval_C, Polynomial.aeval_X]
+          simp only [C_eq_algebraMap]
+          simp only [← map_pow, ← map_mul, ← map_add, ← map_neg, ← map_sub]
+          change (algebraMap R[X] (AdjoinRoot (e • W).polynomial))
+              ((algebraMap R R[X]) (ui ^ 3)) *
+              ((algebraMap R[X] (AdjoinRoot (e • W).polynomial))
+                  ((algebraMap R R[X]) (u ^ 3)) *
+                  AdjoinRoot.root (e • W).polynomial +
+                (algebraMap R[X] (AdjoinRoot (e • W).polynomial))
+                  ((algebraMap R R[X]) (u ^ 2 * e.s) * X + (algebraMap R R[X]) e.t)) +
+            (algebraMap R[X] (AdjoinRoot (e • W).polynomial))
+              ((algebraMap R R[X]) (-e.s * ui ^ 3) *
+                  ((algebraMap R R[X]) (u ^ 2) * X + (algebraMap R R[X]) e.r) +
+                (algebraMap R R[X]) ((e.r * e.s - e.t) * ui ^ 3)) =
+            AdjoinRoot.root (e • W).polynomial
+          set f := algebraMap R[X] (AdjoinRoot (e • W).polynomial)
+          set g := algebraMap R R[X]
+          have key : f (g (ui ^ 3)) * f (g (u ^ 3)) = 1 := by
+            rw [← map_mul f, ← map_mul g, ← map_one f, ← map_one g]
+            congr 1; congr 1; exact pow_mul_pow_eq_one 3 e.u.inv_mul
+          have residual : f (g (ui ^ 3)) * f (g (u ^ 2 * e.s) * X + g e.t) +
+              f (g (-e.s * ui ^ 3) * (g (u ^ 2) * X + g e.r) +
+                g ((e.r * e.s - e.t) * ui ^ 3)) = 0 := by
+            rw [← map_mul f, ← map_add f, ← map_zero f]
+            congr 1
+            simp only [map_mul g, map_neg g, map_sub g, map_pow g]
+            ring_nf
+          exact mul_root_add_cancel key residual)
+    (by -- ψ ∘ φ = id on W.CoordinateRing
+        apply AdjoinRoot.algHom_ext'
+        · apply Polynomial.algHom_ext
+          change ψ (φ (AdjoinRoot.of _ X)) = AdjoinRoot.of _ X
+          simp only [ψ, φ, AdjoinRoot.liftAlgHom_of, ι', ι, AlgHom.comp_apply,
+            IsScalarTower.toAlgHom_apply, Polynomial.aeval_X]
+          rw [show (algebraMap R[X] (e • W).CoordinateRing) =
+            AdjoinRoot.of (e • W).polynomial from rfl,
+            AdjoinRoot.liftAlgHom_of]
+          simp only [AlgHom.comp_apply, IsScalarTower.toAlgHom_apply]
+          congr 1
+          exact Affine.variableChange_aeval_comp_inv (e := e)
+        · simp only [AlgHom.comp_apply, AlgHom.id_apply]
+          show ψ (φ (AdjoinRoot.root _)) = AdjoinRoot.root _
+          simp only [φ, AdjoinRoot.liftAlgHom_root]
+          -- Goal: ψ η = root W.polynomial
+          show ψ (algebraMap R[X] _ (C (u ^ 3)) * AdjoinRoot.root _ +
+            algebraMap R[X] _ (C (u ^ 2 * e.s) * X + C e.t)) = AdjoinRoot.root _
+          rw [show (algebraMap R[X] (AdjoinRoot (e • W).polynomial)) =
+            AdjoinRoot.of (e • W).polynomial from rfl]
+          have hψ_of : ∀ r : R[X], ψ (AdjoinRoot.of _ r) = ι' r :=
+            fun r => AdjoinRoot.liftAlgHom_of _ _ _ _ r
+          have hψ_root : ψ (AdjoinRoot.root _) = η' :=
+            AdjoinRoot.liftAlgHom_root _ _ _ _
+          simp only [map_add, map_mul, hψ_of, hψ_root]
+          simp only [η', ι', AlgHom.comp_apply, IsScalarTower.toAlgHom_apply, map_add,
+            map_mul, map_pow, map_neg, map_sub, Polynomial.aeval_C, Polynomial.aeval_X]
+          simp only [C_eq_algebraMap]
+          simp only [← map_pow, ← map_mul, ← map_add, ← map_neg, ← map_sub]
+          change (algebraMap R[X] (AdjoinRoot W.polynomial))
+              ((algebraMap R R[X]) (u ^ 3)) *
+              ((algebraMap R[X] (AdjoinRoot W.polynomial))
+                  ((algebraMap R R[X]) (ui ^ 3)) *
+                  AdjoinRoot.root W.polynomial +
+                (algebraMap R[X] (AdjoinRoot W.polynomial))
+                  ((algebraMap R R[X]) (-e.s * ui ^ 3) * X +
+                    (algebraMap R R[X]) ((e.r * e.s - e.t) * ui ^ 3))) +
+            (algebraMap R[X] (AdjoinRoot W.polynomial))
+              ((algebraMap R R[X]) (u ^ 2 * e.s) *
+                  ((algebraMap R R[X]) (ui ^ 2) * X +
+                    (algebraMap R R[X]) (-e.r * ui ^ 2)) +
+                (algebraMap R R[X]) e.t) =
+            AdjoinRoot.root W.polynomial
+          set f := algebraMap R[X] (AdjoinRoot W.polynomial)
+          set g := algebraMap R R[X]
+          have key : f (g (u ^ 3)) * f (g (ui ^ 3)) = 1 := by
+            rw [← map_mul f, ← map_mul g, ← map_one f, ← map_one g]
+            congr 1; congr 1; exact pow_mul_pow_eq_one 3 e.u.mul_inv
+          have residual : f (g (u ^ 3)) *
+              f (g (-e.s * ui ^ 3) * X + g ((e.r * e.s - e.t) * ui ^ 3)) +
+              f (g (u ^ 2 * e.s) * (g (ui ^ 2) * X + g (-e.r * ui ^ 2)) +
+                g e.t) = 0 := by
+            rw [← map_mul f, ← map_add f, ← map_zero f]
+            congr 1
+            simp only [map_mul g, map_neg g, map_sub g, map_pow g]
+            have hu : g u * g ui = 1 := by
+              rw [← map_mul g, ← map_one g]; congr 1; exact e.u.mul_inv
+            linear_combination
+              g e.s * (X - g e.r) * pow_mul_pow_eq_one 2 hu -
+              g e.s * (X - g e.r) * pow_mul_pow_eq_one 3 hu -
+              g e.t * pow_mul_pow_eq_one 3 hu
+          exact mul_root_add_cancel key residual)
 
 namespace Affine
 /- A type synonym of WeierstrassCurve to give access to affine versions of the Weierstrass
