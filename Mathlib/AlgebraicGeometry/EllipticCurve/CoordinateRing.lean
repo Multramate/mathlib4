@@ -295,10 +295,10 @@ def Affine.CoordinateRing.variableChange {R} [CommRing R] (W : WeierstrassCurve.
           congr 1
           exact Affine.variableChange_aeval_comp_inv (e := e)
         · simp only [AlgHom.comp_apply, AlgHom.id_apply]
-          show ψ (φ (AdjoinRoot.root _)) = AdjoinRoot.root _
+          change ψ (φ (AdjoinRoot.root _)) = AdjoinRoot.root _
           simp only [φ, AdjoinRoot.liftAlgHom_root]
           -- Goal: ψ η = root W.polynomial
-          show ψ (algebraMap R[X] _ (C (u ^ 3)) * AdjoinRoot.root _ +
+          change ψ (algebraMap R[X] _ (C (u ^ 3)) * AdjoinRoot.root _ +
             algebraMap R[X] _ (C (u ^ 2 * e.s) * X + C e.t)) = AdjoinRoot.root _
           rw [show (algebraMap R[X] (AdjoinRoot (e • W).polynomial)) =
             AdjoinRoot.of (e • W).polynomial from rfl]
