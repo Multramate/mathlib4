@@ -257,18 +257,6 @@ def Affine.CoordinateRing.variableChange {R} [CommRing R] (W : WeierstrassCurve.
             Polynomial.aeval_C, Polynomial.aeval_X]
           simp only [C_eq_algebraMap]
           simp only [← map_pow, ← map_mul, ← map_add, ← map_neg, ← map_sub]
-          change (algebraMap R[X] (AdjoinRoot (e • W).polynomial))
-              ((algebraMap R R[X]) (ui ^ 3)) *
-              ((algebraMap R[X] (AdjoinRoot (e • W).polynomial))
-                  ((algebraMap R R[X]) (u ^ 3)) *
-                  AdjoinRoot.root (e • W).polynomial +
-                (algebraMap R[X] (AdjoinRoot (e • W).polynomial))
-                  ((algebraMap R R[X]) (u ^ 2 * e.s) * X + (algebraMap R R[X]) e.t)) +
-            (algebraMap R[X] (AdjoinRoot (e • W).polynomial))
-              ((algebraMap R R[X]) (-e.s * ui ^ 3) *
-                  ((algebraMap R R[X]) (u ^ 2) * X + (algebraMap R R[X]) e.r) +
-                (algebraMap R R[X]) ((e.r * e.s - e.t) * ui ^ 3)) =
-            AdjoinRoot.root (e • W).polynomial
           set f := algebraMap R[X] (AdjoinRoot (e • W).polynomial)
           set g := algebraMap R R[X]
           have key : f (g (ui ^ 3)) * f (g (u ^ 3)) = 1 := by
@@ -295,7 +283,6 @@ def Affine.CoordinateRing.variableChange {R} [CommRing R] (W : WeierstrassCurve.
           congr 1
           exact Affine.variableChange_aeval_comp_inv (e := e)
         · simp only [AlgHom.comp_apply, AlgHom.id_apply]
-          change ψ (φ (AdjoinRoot.root _)) = AdjoinRoot.root _
           simp only [φ, AdjoinRoot.liftAlgHom_root]
           -- Goal: ψ η = root W.polynomial
           change ψ (algebraMap R[X] _ (C (u ^ 3)) * AdjoinRoot.root _ +
@@ -311,20 +298,6 @@ def Affine.CoordinateRing.variableChange {R} [CommRing R] (W : WeierstrassCurve.
             map_mul, map_pow, map_neg, map_sub, Polynomial.aeval_C, Polynomial.aeval_X]
           simp only [C_eq_algebraMap]
           simp only [← map_pow, ← map_mul, ← map_add, ← map_neg, ← map_sub]
-          change (algebraMap R[X] (AdjoinRoot W.polynomial))
-              ((algebraMap R R[X]) (u ^ 3)) *
-              ((algebraMap R[X] (AdjoinRoot W.polynomial))
-                  ((algebraMap R R[X]) (ui ^ 3)) *
-                  AdjoinRoot.root W.polynomial +
-                (algebraMap R[X] (AdjoinRoot W.polynomial))
-                  ((algebraMap R R[X]) (-e.s * ui ^ 3) * X +
-                    (algebraMap R R[X]) ((e.r * e.s - e.t) * ui ^ 3))) +
-            (algebraMap R[X] (AdjoinRoot W.polynomial))
-              ((algebraMap R R[X]) (u ^ 2 * e.s) *
-                  ((algebraMap R R[X]) (ui ^ 2) * X +
-                    (algebraMap R R[X]) (-e.r * ui ^ 2)) +
-                (algebraMap R R[X]) e.t) =
-            AdjoinRoot.root W.polynomial
           set f := algebraMap R[X] (AdjoinRoot W.polynomial)
           set g := algebraMap R R[X]
           have key : f (g (u ^ 3)) * f (g (ui ^ 3)) = 1 := by
@@ -410,10 +383,8 @@ def norm : R(X) :=
 
 -- An arbitrary element of the function field can be written in the form p(X) + q(X)Y
 theorem FunctionField'.exists_comb_eq (f : E.FunctionField') : ∃ p q : R(X), E.comb p q = f := by
-  have hmonic : (E.polynomial.map (algebraMap R[X] R(X))).Monic := monic_polynomial.map _
-  have hnd : (E.polynomial.map (algebraMap R[X] R(X))).natDegree = 2 :=
-    (monic_polynomial.natDegree_map _).trans natDegree_polynomial
-  let b := (AdjoinRoot.powerBasis' hmonic).basis.reindex (finCongr hnd)
+  let b := (AdjoinRoot.powerBasis' (E.monic_polynomial.map (algebraMap R[X] R(X)))).basis.reindex
+    (finCongr ((monic_polynomial.natDegree_map _).trans E.natDegree_polynomial))
   have h := b.sum_repr f
   rw [Fin.sum_univ_succ, Fin.sum_univ_one, Fin.succ_zero_eq_one] at h
   have hb0 : b 0 = 1 := by
