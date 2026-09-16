@@ -41,6 +41,13 @@ file used by the library's own linters.
   **Requirements:** `gh` (GitHub CLI) installed and authenticated (`gh auth login`).
 
 **Tools for manual maintenance**
+- `naming_audit/naming_audit.py`
+  Scans all Lean sources (no toolchain needed) for naming-convention inconsistencies — casing rule
+  violations, probable typos, Lean 3 style spellings of camelCase names, outdated name components,
+  name/statement mismatches and textually duplicated statements — and (re)generates the living
+  audit document `docs/naming_audit.md`. Re-running preserves the hand-edited `Status`/`Note`
+  cells of rows that still apply. Pass `--deps` with checkouts of Lean core (`src/Init`, `src/Std`,
+  `src/Lean`) and Batteries so that upstream names are recognised.
 - `fix_unused.py`
   Bulk processing of unused variable warnings, replacing them with `_`.
 - `fix_deprecations.py`
