@@ -53,6 +53,17 @@ file used by the library's own linters.
   that technical vocabulary is not flagged: a word is reported only when it is rare in the corpus,
   unknown to `aspell`, and close to a word the corpus uses often. `naming_audit.py` calls it for
   category F1; run it directly for a standalone TSV report.
+- `comment_audit/comment_audit.py`
+  The companion of `naming_audit.py` for prose: scans all Lean sources (no toolchain needed) for
+  inconsistencies between comments and docstrings — module docstring section headings spelled
+  differently from each other, cross-references to files, modules, library notes and bibliography
+  entries that no longer resolve, minority hyphenation and British/American spellings, proper nouns
+  in lower case, doubled words, ASCII or LaTeX stand-ins for Unicode notation, unbalanced code
+  spans and nonstandard casing of comment markers — and (re)generates the living audit document
+  `docs/comment_audit.md`. Re-running preserves the hand-edited `Status`/`Note` cells of rows that
+  still apply. Every threshold comes from the corpus rather than from a style guide: a spelling is
+  reported because Mathlib overwhelmingly writes it the other way. Plain misspellings are left to
+  `prose_typos.py` and are not repeated here.
 - `fix_unused.py`
   Bulk processing of unused variable warnings, replacing them with `_`.
 - `fix_deprecations.py`
