@@ -15,6 +15,8 @@ markdown file directly.
 Usage:
     python3 scripts/naming_audit/naming_audit.py [--root .] [--deps DIR ...] [--out docs/naming_audit.md]
 
+Category F1 additionally spell-checks comments and docstrings; see `prose_typos.py`.
+
 `--deps` may point at checkouts of Lean core (`src/Init`, `src/Std`, `src/Lean`) and Batteries so that
 names declared upstream are recognised when checking for unknown / misspelled tokens.
 """
@@ -27,6 +29,9 @@ import json
 import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import prose_typos  # noqa: E402  (same directory)
 
 # --------------------------------------------------------------------------------------------
 # Part 1: extraction
@@ -559,6 +564,14 @@ CATEGORY_INFO = collections.OrderedDict([
     ("E1", ("Textually identical statements under different names",
             "Two non-deprecated theorems in the same namespace (or one at root) whose binders, statement and "
             "the types of the section variables they use are textually identical. Candidates for `alias`/removal.")),
+    ("F1", ("Probable spelling errors in comments and docstrings",
+            "Prose, not names: a word used at most twice in Mathlib's comments, unknown to `aspell`, and within "
+            "edit distance 1 (or 2, for long words) of a word the comments use often. Identifiers that escape a "
+            "code span, productive prefixes (`bi`, `co`, `semi`, …), inflections, proper nouns, license headers "
+            "and bibliography entries are filtered out, but real English and mathematical words that `aspell` "
+            "simply does not know (`imprimitive`, `probabilist`, `disequalities`) still come through, as do "
+            "British spellings (`localisations`, `parametrised`); those are `fp`. Only the first site is listed "
+            "when a word is misspelled more than once.")),
 ])
 
 
@@ -1117,7 +1130,16 @@ class Audit:
             self.add_raw("E1", "E1|" + "|".join(sorted(x["full"] for x in xs)), x0["full"], "theorem", x0["file"],
                          x0["line"], f"`{x0['type'][:80]}` — also stated by {others}", "medium")
 
-    def run(self) -> list:
+    # ---- F1: prose
+    def check_prose(self, dirs):
+        for w, corr, dist, fw, fc, sites in prose_typos.scan(self.root, dirs):
+            file, line, kind = sites[0]
+            more = f"; also at {len(sites) - 1} other site(s)" if len(sites) > 1 else ""
+            conf = "high" if dist == 1 and fc >= 500 else "medium" if fc >= 100 else "low"
+            self.add_raw("F1", f"F1|{w}", w, kind, file, line,
+                         f"`{w}` → `{corr}` (distance {dist}; {fw} vs {fc} uses in comments{more})", conf)
+
+    def run(self, prose_dirs=("Mathlib", "Archive", "Counterexamples")) -> list:
         self.check_casing()
         self.check_fields()
         self.check_spelling()
@@ -1126,6 +1148,7 @@ class Audit:
         self.check_outdated_tokens()
         self.check_semantics()
         self.check_duplicates()
+        self.check_prose(prose_dirs)
         return self.findings
 
 
@@ -1135,7 +1158,7 @@ class Audit:
 
 STATUSES = ("open", "confirmed", "fp", "fixed", "wontfix")
 TOKEN_KEYED = {"C2", "D1"}       # key also contains the first `token` of the detail cell
-NAME_KEYED = {"A8", "A9", "A10", "B1", "B2", "B3", "C1"}   # key is category + name only
+NAME_KEYED = {"A8", "A9", "A10", "B1", "B2", "B3", "C1", "F1"}   # key is category + name only
 
 
 def row_key(cat: str, name: str, file: str, detail: str) -> str:
@@ -1219,6 +1242,8 @@ def render(findings: list, existing: dict, out_path: str, decl_count: int, file_
     lines.append("  `biUnion`, `setOf`, `notMem`, `n + 1` (not `succ`), `ne_zero` (not `nonzero`), …")
     lines.append("- A name should describe the statement: `_iff` ↔ `↔`, `_ne_` ↔ `≠`, `_lt_` ↔ `<`, `_inter_` ↔ `∩`.")
     lines.append("- The same statement should not exist under two names unless one is an `alias`.")
+    lines.append("- Comments and docstrings are English prose: category F1 checks their spelling against the")
+    lines.append("  vocabulary Mathlib's own comments use, so that technical terms are not flagged.")
     lines.append("")
     lines.append("## Summary")
     lines.append("")
@@ -1252,7 +1277,7 @@ def render(findings: list, existing: dict, out_path: str, decl_count: int, file_
         status_rank = {"confirmed": 0, "open": 1, "wontfix": 2, "fixed": 3, "fp": 4}
         rows.sort(key=lambda r: (status_rank[status_of[r["key"]][0]], conf_rank[r["conf"]], r["file"], r["line"],
                                  r["name"]))
-        lines.append("| Status | Declaration | Location | Detail | Note |")
+        lines.append(f"| Status | {'Word' if cat == 'F1' else 'Declaration'} | Location | Detail | Note |")
         lines.append("|---|---|---|---|---|")
         for r in rows:
             st, note = status_of[r["key"]]

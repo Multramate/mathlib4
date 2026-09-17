@@ -48,6 +48,11 @@ file used by the library's own linters.
   audit document `docs/naming_audit.md`. Re-running preserves the hand-edited `Status`/`Note`
   cells of rows that still apply. Pass `--deps` with checkouts of Lean core (`src/Init`, `src/Std`,
   `src/Lean`) and Batteries so that upstream names are recognised.
+- `naming_audit/prose_typos.py`
+  Spell-checks comments and docstrings, using Mathlib's own comment corpus as the dictionary so
+  that technical vocabulary is not flagged: a word is reported only when it is rare in the corpus,
+  unknown to `aspell`, and close to a word the corpus uses often. `naming_audit.py` calls it for
+  category F1; run it directly for a standalone TSV report.
 - `fix_unused.py`
   Bulk processing of unused variable warnings, replacing them with `_`.
 - `fix_deprecations.py`
