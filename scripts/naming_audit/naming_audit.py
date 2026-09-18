@@ -242,7 +242,9 @@ def extract_file(path: str, root: str) -> list:
     text = strip_comments(src)
     starts = [0] + [m.end() for m in re.finditer("\n", text)]
     n = len(text)
-    rel = os.path.relpath(path, root)
+    # Always forward slashes: this document is merged and diffed across machines, and a Windows run
+    # must not rewrite the location of every row in it.
+    rel = os.path.relpath(path, root).replace(os.sep, "/")
 
     def line_of(pos: int) -> int:
         lo, hi = 0, len(starts) - 1
