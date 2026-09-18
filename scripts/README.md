@@ -64,6 +64,14 @@ file used by the library's own linters.
   still apply. Every threshold comes from the corpus rather than from a style guide: a spelling is
   reported because Mathlib overwhelmingly writes it the other way. Plain misspellings are left to
   `prose_typos.py` and are not repeated here.
+- `audit_plan/fix_plan.py`
+  Reads `docs/naming_audit.md` and `docs/comment_audit.md` and writes `docs/audit_fix_plan.md`,
+  grouping their still-open findings into batches that are each meant to become one pull request:
+  at most ten files per batch, except for a batch applying a single mechanical substitution, which
+  may span up to a hundred. Batches are tiered by how ready they are — already `confirmed`,
+  mechanical but untriaged, and needing a judgement at every site — so re-running after triage
+  moves rows between tiers. Pass `--no-sweep` to skip the index that bounds how many files a
+  rename's follow-up call-site sweep would touch.
 - `fix_unused.py`
   Bulk processing of unused variable warnings, replacing them with `_`.
 - `fix_deprecations.py`
