@@ -64,14 +64,28 @@ file used by the library's own linters.
   still apply. Every threshold comes from the corpus rather than from a style guide: a spelling is
   reported because Mathlib overwhelmingly writes it the other way. Plain misspellings are left to
   `prose_typos.py` and are not repeated here.
-- `audit_plan/fix_plan.py`
-  Reads `docs/naming_audit.md` and `docs/comment_audit.md` and writes `docs/audit_fix_plan.md`,
-  grouping their still-open findings into batches that are each meant to become one pull request:
-  at most ten files per batch, except for a batch applying a single mechanical substitution, which
-  may span up to a hundred. Batches are tiered by how ready they are — already `confirmed`,
-  mechanical but untriaged, and needing a judgement at every site — so re-running after triage
-  moves rows between tiers. Pass `--no-sweep` to skip the index that bounds how many files a
-  rename's follow-up call-site sweep would touch.
+- `typo_audit/typos.py`
+  Builds `docs/typos.md`, the canonical record of every typo and consistency problem known in the
+  repository. It absorbs `docs/naming_audit.md` and `docs/comment_audit.md` (as the `NAME-` and
+  `DOC-` sections; pass `--regen` to re-run those two generators first) and adds one section per
+  surface that neither of them reads, produced by the source modules in `typo_audit/sources/`:
+  Lean string literals, the Lean trees outside `Mathlib/`, file and directory names, repository
+  markdown and CI files, the `docs/*.yaml` data files and `references.bib`, deprecation metadata,
+  and the library-note and notation vocabulary. Like the audits it absorbs, it is a living document
+  whose `Status`/`Note` cells survive a re-run.
+- `typo_audit/context.py`
+  The yardstick every source module is judged against: Mathlib's own comment vocabulary, an
+  optional English dictionary, and the suggestion engine. Built from comments under `Mathlib/`,
+  `Archive/` and `Counterexamples/` only, never from the surface being audited, so that a typo
+  cannot vote itself into the dictionary. `typo_audit/run_one.py` runs a single source module
+  against the tree, which is the development loop for adding a surface.
+- `typo_audit/tickets.py`
+  Reads `docs/typos.md` and writes `docs/tickets.md`, grouping the still-open findings into
+  tickets that are each meant to become one pull request: at most ten files, except for a ticket
+  applying a single mechanical substitution, which may span up to a hundred. Tickets are tiered by
+  readiness — already `confirmed`, mechanical but untriaged, and needing a judgement at every site
+  — so re-running after triage moves rows between tiers. `--no-sweep` skips the indexes that size a
+  declaration rename's follow-up and a file rename's import fan-out.
 - `fix_unused.py`
   Bulk processing of unused variable warnings, replacing them with `_`.
 - `fix_deprecations.py`

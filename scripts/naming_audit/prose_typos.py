@@ -69,7 +69,13 @@ def extract_comments(src: str):
                 elif src[j] == "\n":
                     line += 1
                 j += 1
+            # A string literal's body is not code.  Leaving it in `code` registered every English
+            # word inside a string as an identifier, and `scan`'s `keep()` then dropped that word
+            # wherever it also occurred in real prose: `auxilliary` and `superceded` each sit in a
+            # genuine docstring and in a deprecation message, and neither was ever reported.
+            code.append(src[plain:i])
             i = j + 1
+            plain = i
             continue
         if src.startswith("--", i):
             code.append(src[plain:i])
@@ -107,6 +113,77 @@ def extract_comments(src: str):
         i += 1
     code.append(src[plain:n])
     return out, "".join(code)
+
+
+def extract_strings(src: str):
+    """Yield (line_number, text) for every string literal body in a Lean source file.
+
+    Comments are skipped, so a `"` inside one is not mistaken for a literal.  The body is returned
+    raw: escapes, `{…}` antiquotations and Lean's `\\<newline>` string gaps are the caller's to
+    strip, because what counts as prose differs by surface.
+    """
+    out = []
+    i, n = 0, len(src)
+    line = 1
+    while i < n:
+        c = src[i]
+        if c == "\n":
+            line += 1
+            i += 1
+            continue
+        if src.startswith("--", i):
+            j = src.find("\n", i)
+            i = n if j == -1 else j
+            continue
+        if src.startswith("/-", i):
+            depth, j = 1, i + 2
+            while j < n and depth:
+                if src.startswith("/-", j):
+                    depth += 1
+                    j += 2
+                    continue
+                if src.startswith("-/", j):
+                    depth -= 1
+                    j += 2
+                    continue
+                if src[j] == "\n":
+                    line += 1
+                j += 1
+            i = j
+            continue
+        if c == '"':
+            start_line = line
+            j = i + 1
+            while j < n and src[j] != '"':
+                if src[j] == "\\":
+                    j += 1
+                    if j < n and src[j] == "\n":
+                        line += 1
+                elif src[j] == "\n":
+                    line += 1
+                j += 1
+            out.append((start_line, src[i + 1:j]))
+            i = j + 1
+            continue
+        i += 1
+    return out
+
+
+# A string literal is prose only if it reads like a sentence: interpolation holes, escapes and
+# Lean's line continuations come out first, and what is left must be several lowercase words.
+ANTIQUOT = re.compile(r"\{[^{}]*\}")
+STRING_GAP = re.compile(r"\\\s*\n\s*")
+ESCAPE = re.compile(r"\\[nrt\"\\']")
+
+
+def string_prose(text: str) -> str:
+    """The prose of a string literal body, or '' if it does not read like prose."""
+    t = STRING_GAP.sub(" ", text)
+    t = ANTIQUOT.sub(" ", t)
+    t = ESCAPE.sub(" ", t)
+    if len(re.findall(r"\b[a-z]{2,}\b", t)) < 5:
+        return ""
+    return t
 
 
 # ------------------------------------------------------------------ prose cleaning
@@ -247,18 +324,74 @@ def deletions(w: str, k: int) -> set:
     return res
 
 
-# ------------------------------------------------------------------ aspell
+# ------------------------------------------------------------------ the dictionary
+
+# Without a dictionary the report roughly triples in size, and which words survive depends on which
+# machine ran the script — so fall back to a hunspell word list before giving up. Set
+# MATHLIB_TYPO_DICT to a .dic file to point the fallback somewhere specific.
+DICT_ENV = "MATHLIB_TYPO_DICT"
+DICT_GUESSES = (
+    "/usr/share/hunspell/en_US.dic",
+    "/usr/share/myspell/en_US.dic",
+    "/usr/share/dict/words",
+    os.path.expanduser("~/AppData/Local/Programs/MiKTeX/hunspell/dicts/en_US.dic"),
+    os.path.expanduser("~/AppData/Local/Programs/MiKTeX/hunspell/dicts/en-GB.dic"),
+)
+
+_dictionary_cache = None
+
+
+def load_dictionary() -> set:
+    """An English word list, or the empty set if none is installed.
+
+    A hunspell `.dic` lists stems with affix flags; rather than interpret the `.aff` rules, the
+    regular inflections are added by hand, which is enough for the one question asked of it — is
+    this word ordinary English?"""
+    global _dictionary_cache
+    if _dictionary_cache is not None:
+        return _dictionary_cache
+    words = set()
+    for path in ([os.environ[DICT_ENV]] if os.environ.get(DICT_ENV) else []) + list(DICT_GUESSES):
+        if not path or not os.path.exists(path):
+            continue
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                w = line.split("/")[0].strip().lower()
+                if w and w.isalpha():
+                    words.add(w)
+    if words:
+        extra = set()
+        for w in words:
+            extra.update((w + "s", w + "es", w + "ed", w + "d", w + "ing", w + "ly"))
+            if w.endswith("e"):
+                extra.update((w[:-1] + "ing", w[:-1] + "ed"))
+            if w.endswith("y"):
+                extra.update((w[:-1] + "ies", w[:-1] + "ied"))
+        words |= extra
+    _dictionary_cache = words
+    return words
+
 
 def aspell_unknown(words) -> set:
-    """Return the subset of `words` that aspell does not recognise. All of them if aspell is absent."""
+    """Return the subset of `words` no dictionary recognises.
+
+    `aspell` is asked first, because it knows about morphology; a hunspell word list is the
+    fallback. With neither, every word is 'unknown' and the caller's report is much noisier — the
+    warning says so."""
     try:
         p = subprocess.run(["aspell", "--lang=en", "--encoding=utf-8", "list"],
                            input="\n".join(sorted(words)), capture_output=True, text=True,
                            timeout=600)
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        print("warning: aspell unavailable, skipping dictionary filter", file=sys.stderr)
-        return set(words)
-    return set(p.stdout.split())
+        return set(p.stdout.split())
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        pass
+    known = load_dictionary()
+    if known:
+        print(f"warning: aspell unavailable, using a hunspell word list ({len(known)} words)",
+              file=sys.stderr)
+        return {w for w in words if w.lower() not in known}
+    print("warning: no dictionary available, skipping the dictionary filter", file=sys.stderr)
+    return set(words)
 
 
 # ------------------------------------------------------------------ main
@@ -284,7 +417,7 @@ def scan(root: str, dirs=("Mathlib", "Archive", "Counterexamples"), min_freq: in
                     continue
                 files += 1
                 path = os.path.join(dp, f)
-                rel = os.path.relpath(path, root)
+                rel = os.path.relpath(path, root).replace(os.sep, "/")
                 with open(path, encoding="utf-8") as fh:
                     src = fh.read()
                 comments, code = extract_comments(src)
