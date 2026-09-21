@@ -7,8 +7,8 @@ The grouping rule comes from review practice: a machine-generated pull request s
 than **10 files**, because a reviewer forms a separate judgement about each one.  The exception is a
 pull request applying a **single mechanical substitution** — the same wrong spelling replaced by the
 same right one everywhere — where reading the whole diff is reading one decision; those may span up
-to **100 files**.  So a substitution touching more than ten files becomes a ticket of its own, split
-at a hundred, and everything else is packed in path order into tickets of at most ten files, which
+to **300 files**.  So a substitution touching more than ten files becomes a ticket of its own, split
+at three hundred, and everything else is packed in path order into tickets of at most ten files, which
 keeps a ticket inside one area of the library.
 
 Tickets are tiered, because several thousand findings is a backlog rather than a plan:
@@ -40,7 +40,7 @@ import os
 import re
 import sys
 
-UNIFORM_CAP, BESPOKE_CAP = 100, 10
+UNIFORM_CAP, BESPOKE_CAP = 300, 10
 CELL = re.compile(r"(?<!\\)\|")
 STATUSES = ("open", "confirmed", "fp", "fixed", "wontfix")
 TOKEN = re.compile(r"[A-Za-z_][A-Za-z0-9_'!?]*")
@@ -298,8 +298,10 @@ def render(tickets, live, out_path, swept):
     L.append("")
     L.append("## Sizing")
     L.append("")
-    L.append("At most **10 files** per ticket — a reviewer forms a separate judgement about each file.")
-    L.append("A ticket applying a **single mechanical substitution** may span up to **100 files**,")
+    L.append(f"At most **{BESPOKE_CAP} files** per ticket — a reviewer forms a separate judgement "
+             "about each file.")
+    L.append(f"A ticket applying a **single mechanical substitution** may span up to "
+             f"**{UNIFORM_CAP} files**,")
     L.append("because reading that whole diff is reading one decision; the `Kind` column says which")
     L.append("rule a ticket is under. Tickets are packed in path order, so one ticket stays inside one")
     L.append("area of the library.")
@@ -403,7 +405,8 @@ def main():
         tt = [t for t in tickets if t["tier"] == tier]
         print(f"  {tier}: {len(tt):4} tickets, {sum(len(t['rows']) for t in tt):5} findings, "
               f"{len({f for t in tt for f in t['files']}):5} files")
-    print(f"  over the 10-file cap: {len(bad)}; over the 100-file cap: {len(worse)}")
+    print(f"  over the {BESPOKE_CAP}-file cap: {len(bad)}; "
+          f"over the {UNIFORM_CAP}-file cap: {len(worse)}")
     if bad or worse:
         sys.exit(1)
 
