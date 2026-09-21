@@ -82,7 +82,7 @@ file used by the library's own linters.
 - `typo_audit/tickets.py`
   Reads `docs/typos.md` and writes `docs/tickets.md`, grouping the still-open findings into
   tickets that are each meant to become one pull request: at most ten files, except for a ticket
-  applying a single mechanical substitution, which may span up to a hundred. Tickets are tiered by
+  applying a single mechanical substitution, which may span up to three hundred. Tickets are tiered by
   readiness — already `confirmed`, mechanical but untriaged, and needing a judgement at every site
   — so re-running after triage moves rows between tiers. `--no-sweep` skips the indexes that size a
   declaration rename's follow-up and a file rename's import fan-out.
