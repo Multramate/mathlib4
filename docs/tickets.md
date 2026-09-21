@@ -9,7 +9,7 @@ documents on the next run.
 ## Sizing
 
 At most **10 files** per ticket — a reviewer forms a separate judgement about each file.
-A ticket applying a **single mechanical substitution** may span up to **100 files**,
+A ticket applying a **single mechanical substitution** may span up to **300 files**,
 because reading that whole diff is reading one decision; the `Kind` column says which
 rule a ticket is under. Tickets are packed in path order, so one ticket stays inside one
 area of the library.
