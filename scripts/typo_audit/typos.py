@@ -115,7 +115,9 @@ def read_existing(path: str) -> dict:
             if len(cells) >= 5 and cells[0] in STATUSES:
                 loc = cells[2].strip("`")
                 file = loc.rpartition(":")[0] or loc
-                out[row_key(cat, cells[1].strip("`"), file, cells[3])] = (cells[0], cells[4])
+                # `render` escapes the note again, so undo the escaping it was written with.
+                note = cells[4].replace("\\|", "|")
+                out[row_key(cat, cells[1].strip("`"), file, cells[3])] = (cells[0], note)
     return out
 
 
