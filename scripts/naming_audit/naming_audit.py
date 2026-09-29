@@ -577,6 +577,14 @@ CATEGORY_INFO = collections.OrderedDict([
 ])
 
 
+def lower_initial_caps(name: str) -> str:
+    """How an UpperCamelCase name is written inside another name: the whole initial run of capitals
+    is lowercased (`SFinite` → `sfinite`, `NNReal` → `nnreal`, `AEMeasurable` → `aemeasurable`), as
+    j-loreaux stated on #44292."""
+    run = re.match(r"[A-Z]*", name).group(0)
+    return run.lower() + name[len(run):]
+
+
 class Audit:
     def __init__(self, decls: list, dep_decls: list, root: str):
         self.decls = decls
@@ -1014,7 +1022,10 @@ class Audit:
                 continue
             for t in self.tokens(comp):
                 t = self.strip_decor(t)
-                if len(t) >= 6 and t.islower() and t in flat:
+                # `sfinite` for `SFinite` is the correct spelling, not a flattening of `sFinite`.
+                if len(t) >= 6 and t.islower() and t in flat and not any(
+                        lower_initial_caps(k[:1].upper() + k[1:]) == t
+                        for k in flat[t] if k in self.known_lcfirst and k not in self.known_last):
                     tc2[t] += 1
                     if len(where2[t]) < 6:
                         where2[t].append(x)
