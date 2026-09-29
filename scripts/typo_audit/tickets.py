@@ -46,10 +46,11 @@ STATUSES = ("open", "confirmed", "fp", "fixed", "wontfix")
 TOKEN = re.compile(r"[A-Za-z_][A-Za-z0-9_'!?]*")
 
 # Categories where every row applies the identical textual substitution, so one ticket is one
-# decision however many files it spans.
+# decision however many files it spans.  No declaration-name category belongs here: whether
+# `preserves_limit_cone` means `PreservesLimit`, or `pow_succ` should say `add_one`, depends on the
+# statement at every site (#44329 was such a false positive).
 MECHANICAL = {
     "DOC-A1", "DOC-A2", "DOC-A3", "DOC-A5", "DOC-B4", "DOC-C1", "DOC-C2", "DOC-D3", "DOC-D4",
-    "NAME-B3", "NAME-C1", "NAME-C2", "NAME-D2",
     "TEXT-2", "DATA-2",
 }
 
@@ -129,7 +130,7 @@ def parse_typos(path: str) -> tuple:
             rows.append({"cat": cat, "cat_title": titles[cat], "status": cells[0],
                          "name": cells[1].strip("`"), "file": file or loc,
                          "line": int(lineno) if lineno.isdigit() else 0,
-                         "detail": cells[3], "note": cells[4]})
+                         "detail": cells[3], "note": cells[4].replace("\\|", "|")})
     return rows, titles
 
 
@@ -184,9 +185,22 @@ def import_sweep(root: str) -> dict:
     return hits
 
 
+# A replacement written into the `Note` column by whoever triaged the row, e.g. "should be
+# `entirety`" or "→ `exists_isMaximumClique`".  It overrides the scanner's guess in `Detail`.
+NOTE_FIX = re.compile(r"(?:should be|→|fix:)\s*`([^`]+)`")
+# ... or, for a duplicate statement (`NAME-E1`), which of the two names to deprecate.
+NOTE_DEPRECATE = re.compile(r"^deprecate\s*`([^`]+)`")
+
+
 def change_key(r: dict) -> tuple:
     if r["cat"] in ("DOC-C3",):
         return (r["name"],)
+    dep = NOTE_DEPRECATE.search(r["note"])
+    if dep:
+        return ("deprecate", dep.group(1))
+    fix = NOTE_FIX.search(r["note"])
+    if fix:
+        return (r["name"], fix.group(1))
     quoted = re.findall(r"`([^`]*)`", r["detail"])
     if len(quoted) >= 2:
         return (quoted[0], quoted[1])
@@ -194,6 +208,8 @@ def change_key(r: dict) -> tuple:
 
 
 def describe(key: tuple) -> str:
+    if key[0] == "deprecate":
+        return f"deprecate `{key[1]}`"
     return f"`{key[0]}` → `{key[1]}`" if len(key) >= 2 else f"`{key[0]}`"
 
 
@@ -307,8 +323,10 @@ def render(tickets, live, out_path, swept):
     L.append("area of the library.")
     L.append("")
     L.append("Two kinds of ticket cost more than the files they list. A **declaration rename** moves")
-    L.append("every call site: do it with `@[deprecated (since := \"…\")] alias old := new` so the pull")
-    L.append("request stays in the declaring file, and treat `Sweep` as the size of the follow-up. A")
+    L.append("every call site: keep the old name with `@[deprecated (since := \"…\")] alias old := new`")
+    L.append("for a theorem, or `@[deprecated new (since := \"…\")] abbrev old := new` for a `def`, so the")
+    L.append("pull request stays in the declaring file; a named instance instead loses its name, with no")
+    L.append("alias. Treat `Sweep` as the size of the follow-up. A")
     L.append("**file rename** (`PATH-*`) moves every `import` of it and the entry in `Mathlib.lean`,")
     L.append("and those must all be in the same pull request, because a dangling import does not")
     L.append("compile — for those, `Sweep` is part of the ticket, not a follow-up.")
@@ -358,11 +376,11 @@ def render(tickets, live, out_path, swept):
         L.append("Change: " + (t["changes"][0] if len(t["changes"]) == 1
                                else ", ".join(t["changes"])))
         L.append("")
-        L.append("| Location | Finding | Detail |")
-        L.append("|---|---|---|")
+        L.append("| Location | Finding | Detail | Note |")
+        L.append("|---|---|---|---|")
         for r in sorted(t["rows"], key=lambda r: (r["file"], r["line"])):
             L.append(f"| `{r['file']}:{r['line']}` | `{md_escape(r['name'])}` | "
-                     f"{md_escape(r['detail'])} |")
+                     f"{md_escape(r['detail'])} | {md_escape(r['note'])} |")
         L.append("")
     if not swept:
         L.append("_Sweep sizes were not computed (`--no-sweep`)._")
