@@ -13,7 +13,7 @@ Statuses: `open` (not yet looked at), `confirmed` (checked by hand, should be fi
 the next run), `wontfix` (real but deliberately left alone). Confidence (`conf`) is the
 scanner's own estimate, not a triage verdict.
 
-Current triage: **7143 open**, 160 confirmed, 381 false positives, 21 wontfix.
+Current triage: **7141 open**, 162 confirmed, 381 false positives, 21 wontfix.
 
 [`tickets.md`](tickets.md) turns the open rows here into batches sized for individual
 pull requests. Re-generate it whenever this file changes.
@@ -53,14 +53,14 @@ the rest of the library writes it, and those counts are in the `Detail` column.
 | [NAME-A4](#name-a4-data-definitions-in-snake_case) | Data definitions in snake_case | 286 | 286 | 0 | 0 | 0 |
 | [NAME-A5](#name-a5-structures--classes--inductives-not-in-uppercamelcase) | Structures / classes / inductives not in UpperCamelCase | 58 | 47 | 2 | 7 | 2 |
 | [NAME-A6](#name-a6-instances-of-data-valued-classes-named-in-snake_case) | Instances of data-valued classes named in snake_case | 93 | 93 | 0 | 0 | 0 |
-| [NAME-A7](#name-a7-instances-named-in-uppercamelcase) | Instances named in UpperCamelCase | 53 | 51 | 2 | 0 | 0 |
+| [NAME-A7](#name-a7-instances-named-in-uppercamelcase) | Instances named in UpperCamelCase | 53 | 50 | 3 | 0 | 0 |
 | [NAME-A8](#name-a8-structure-fields-with-unexpected-casing) | Structure fields with unexpected casing | 425 | 425 | 0 | 0 | 0 |
 | [NAME-A9](#name-a9-inductive-constructors-with-unexpected-casing) | Inductive constructors with unexpected casing | 68 | 68 | 0 | 0 | 0 |
 | [NAME-A10](#name-a10-namespaces-containing-underscores) | Namespaces containing underscores | 14 | 12 | 0 | 2 | 0 |
 | [NAME-A11](#name-a11-stray-underscores-in-names) | Stray underscores in names | 13 | 11 | 0 | 0 | 2 |
 | [NAME-B1](#name-b1-probable-spelling-errors-in-name-components) | Probable spelling errors in name components | 267 | 46 | 8 | 211 | 1 |
 | [NAME-B2](#name-b2-camelcase-tokens-that-do-not-correspond-to-any-declaration) | camelCase tokens that do not correspond to any declaration | 991 | 902 | 31 | 55 | 0 |
-| [NAME-B3](#name-b3-flattened-camelcase-relindex-for-relindex) | Flattened camelCase (`relindex` for `relIndex`) | 38 | 7 | 19 | 12 | 0 |
+| [NAME-B3](#name-b3-flattened-camelcase-relindex-for-relindex) | Flattened camelCase (`relindex` for `relIndex`) | 38 | 6 | 20 | 12 | 0 |
 | [NAME-C1](#name-c1-lean-3-style-snake_case-spellings-of-camelcase-names) | Lean 3 style snake_case spellings of camelCase names | 448 | 339 | 38 | 71 | 0 |
 | [NAME-C2](#name-c2-known-outdated-name-components) | Known outdated name components | 212 | 212 | 0 | 0 | 0 |
 | [NAME-D1](#name-d1-namestatement-mismatches) | Name/statement mismatches | 403 | 391 | 5 | 7 | 0 |
@@ -1192,6 +1192,7 @@ Findings about the names of declarations themselves — casing, Lean 3 spellings
 |---|---|---|---|---|
 | confirmed | `CategoryTheory.Pretopology.LE` | `Mathlib/CategoryTheory/Sites/Pretopology.lean:80` | (low) UpperCamelCase instance name | → `(anonymous instance)`. make the instance anonymous (the name `LE` shadows the class in the namespace); replace the one `{ Pretopology.LE with … }` by `(inferInstance : LE _)`; no alias |
 | confirmed | `List.LE'` | `Mathlib/Data/List/Lex.lean:147` | (low) UpperCamelCase instance name | → `(anonymous instance)`. make the instance anonymous; never referenced by name; no alias |
+| confirmed | `RayVector.Setoid` | `Mathlib/LinearAlgebra/Ray.lean:220` | (low) UpperCamelCase instance name | fix: `(anonymous instance)` — drop the name (house rule: instances are anonymous, no alias); `Module.Ray` becomes `Quotient (inferInstance : Setoid (RayVector R M))`, and update the docstring at l.48 |
 | open | `RingCat.Colimits.ColimitType.AddGroup` | `Mathlib/Algebra/Category/Ring/Colimits.lean:119` | (low) UpperCamelCase instance name |  |
 | open | `RingCat.Colimits.InhabitedColimitType` | `Mathlib/Algebra/Category/Ring/Colimits.lean:129` | (low) UpperCamelCase instance name |  |
 | open | `RingCat.Colimits.ColimitType.AddGroupWithOne` | `Mathlib/Algebra/Category/Ring/Colimits.lean:132` | (low) UpperCamelCase instance name |  |
@@ -1228,7 +1229,6 @@ Findings about the names of declarations themselves — casing, Lean 3 spellings
 | open | `Sigma.Lex.LT` | `Mathlib/Data/Sigma/Order.lean:132` | (low) UpperCamelCase instance name |  |
 | open | `Sum.Lex.LE` | `Mathlib/Data/Sum/Order.lean:295` | (low) UpperCamelCase instance name |  |
 | open | `Sum.Lex.LT` | `Mathlib/Data/Sum/Order.lean:299` | (low) UpperCamelCase instance name |  |
-| open | `RayVector.Setoid` | `Mathlib/LinearAlgebra/Ray.lean:220` | (low) UpperCamelCase instance name | used by name in `Module.Ray := Quotient (RayVector.Setoid R M)` and a docstring; anonymous needs `Quotient (inferInstance : Setoid _)`, else lowerCamel `setoid` — decide |
 | open | `MeasureTheory.ProbabilityMeasure.R1Space` | `Mathlib/MeasureTheory/Measure/ProbabilityMeasure.lean:344` | (low) UpperCamelCase instance name |  |
 | open | `MeasureTheory.Lp.SecondCountableTopology` | `Mathlib/MeasureTheory/Measure/SeparableMeasure.lean:426` | (low) UpperCamelCase instance name |  |
 | open | `ModularForm.SLAction` | `Mathlib/NumberTheory/ModularForms/SlashActions.lean:150` | (low) UpperCamelCase instance name |  |
@@ -3071,6 +3071,7 @@ Findings about the names of declarations themselves — casing, Lean 3 spellings
 | Status | Finding | Location | Detail | Note |
 |---|---|---|---|---|
 | confirmed | `boolalg` | `Mathlib/Algebra/Ring/BooleanRing.lean:277` | (medium) `boolalg` (1×) vs `BoolAlg`/`boolAlg`: `of_boolalg_symmDiff_aux` (Mathlib/Algebra/Ring/BooleanRing.lean:277) | → `ofBoolAlg_symmDiff_aux`. private aux lemma for `ofBoolAlg_symmDiff` → `ofBoolAlg_symmDiff_aux` (not `of_boolAlg_…`); private, so no deprecation |
+| confirmed | `quasicompact` | `Mathlib/AlgebraicGeometry/Morphisms/FlatDescent.lean:41` | (medium) `quasicompact` (1×) vs `QuasiCompact`/`quasiCompact`: `AlgebraicGeometry.Flat.surjective_descendsAlong_surjective_inf_flat_inf_quasicompact` (Mathlib/AlgebraicGeometry/Morphisms/FlatDescent.lean:41) | fix: `(anonymous instance)` — drop the names of all 6 instances (house rule, no aliases) rather than camelCasing them; reword the module docstring bullets (l.19–28), which cite five of them by name |
 | confirmed | `fullyfaithful` | `Mathlib/AlgebraicTopology/SimplicialSet/NerveAdjunction.lean:401` | (medium) `fullyfaithful` (1×) vs `FullyFaithful`/`fullyFaithful`: `CategoryTheory.nerveFunctor.fullyfaithful` (Mathlib/AlgebraicTopology/SimplicialSet/NerveAdjunction.lean:401) | → `fullyFaithful`. `nerveFunctor.fullyfaithful` → `nerveFunctor.fullyFaithful` (cf. `Spec.fullyFaithful : Scheme.Spec.FullyFaithful`); unused elsewhere |
 | confirmed | `pseudoequal` | `Mathlib/CategoryTheory/Abelian/Pseudoelements.lean:439` | (medium) `pseudoequal` (1×) vs `PseudoEqual`/`pseudoEqual`: `CategoryTheory.Abelian.Pseudoelement.ModuleCat.eq_range_of_pseudoequal` (Mathlib/CategoryTheory/Abelian/Pseudoelements.lean:439) | → `eq_range_of_pseudoEqual`. hypothesis is `PseudoEqual`, written `pseudoEqual` in the file's other names; also update Counterexamples/Pseudoelement.lean:72 |
 | confirmed | `fullsubcategory` | `Mathlib/CategoryTheory/Bicategory/Functor/Cat/ObjectProperty.lean:126` | (medium) `fullsubcategory` (1×) vs `FullSubcategory`/`fullSubcategory`: `CategoryTheory.Pseudofunctor.ObjectProperty.fullsubcategory` (Mathlib/CategoryTheory/Bicategory/Functor/Cat/ObjectProperty.lean:126) | → `fullSubcategory`. → `fullSubcategory` (cf. `MonoidalCategory.fullSubcategory`); `@[simps]` lemmas need aliases too; update the docstrings that cite it |
@@ -3089,7 +3090,6 @@ Findings about the names of declarations themselves — casing, Lean 3 spellings
 | confirmed | `partialorder` | `Mathlib/Order/Preorder/Finsupp.lean:66` | (medium) `partialorder` (1×) vs `PartialOrder`/`partialOrder`: `Finsupp.partialorder` (Mathlib/Order/Preorder/Finsupp.lean:66) | → `(anonymous instance)`. instance: drop the name (not referenced) or rename to `partialOrder` like its named siblings `preorder`/`lattice`; no alias |
 | confirmed | `powerseries` | `Mathlib/RingTheory/KrullDimension/NonZeroDivisors.lean:126` | (medium) `powerseries` (1×) vs `PowerSeries`/`powerSeries`: `ringKrullDim_succ_le_ringKrullDim_powerseries` (Mathlib/RingTheory/KrullDimension/NonZeroDivisors.lean:126) | → `ringKrullDim_succ_le_ringKrullDim_powerSeries`. → `ringKrullDim_succ_le_ringKrullDim_powerSeries` (`powerSeries` is used 53× in names); no other uses |
 | confirmed | `leadingcoeff` | `Mathlib/RingTheory/NoetherNormalization.lean:144` | (medium) `leadingcoeff` (1×) vs `leadingCoeff`: `NoetherNormalization.T_leadingcoeff_isUnit` (Mathlib/RingTheory/NoetherNormalization.lean:144) | → `T_leadingCoeff_isUnit`. private lemma → `T_leadingCoeff_isUnit`; private, used once, no deprecation |
-| open | `quasicompact` | `Mathlib/AlgebraicGeometry/Morphisms/FlatDescent.lean:41` | (medium) `quasicompact` (1×) vs `QuasiCompact`/`quasiCompact`: `AlgebraicGeometry.Flat.surjective_descendsAlong_surjective_inf_flat_inf_quasicompact` (Mathlib/AlgebraicGeometry/Morphisms/FlatDescent.lean:41) | the camelCase fix `quasiCompact` is right, but these are 6 named instances: drop the names (house rule) or keep them because the module docstring cites them? 6 named instances (not 1) spell `@QuasiCompact` as `quasicompact`; rename to `quasiCompact` (cf. `descendsAlong_inf_quasiCompact`) + 5 docstring refs; keep names (docstring cites them), no aliases |
 | open | `birkhoffaverage` | `Mathlib/Dynamics/Ergodic/EmpiricalMeasure.lean:71` | (medium) `birkhoffaverage` (1×) vs `birkhoffAverage`: `MeasureTheory.integral_empiricalMeasure_eq_birkhoffaverage` (Mathlib/Dynamics/Ergodic/EmpiricalMeasure.lean:71) |  |
 | open | `mapsto` | `Mathlib/Geometry/Manifold/Immersion.lean:268` | (medium) `mapsto` (3×) vs `MapsTo`/`mapsTo`: `Manifold.IsImmersionAtOfComplement.mapsto_domChart_source_codChart_source` (Mathlib/Geometry/Manifold/Immersion.lean:268), `Manifold.LocalPresentationAt.mapsto_domChart_source_codChart_source` (Mathlib/Geometry/Manifold/LocalSourceTargetProperty.lean:110), `Manifold.IsSubmersionAtOfComplement.mapsto_domChart_source_codChart_source` (Mathlib/Geometry/Manifold/Submersion.lean:241) |  |
 | open | `linearindependent` | `Mathlib/LinearAlgebra/Matrix/GeneralLinearGroup/Card.lean:105` | (medium) `linearindependent` (1×) vs `LinearIndependent`/`linearIndependent`/`linearIndependent'`: `Matrix.equiv_GL_linearindependent` (Mathlib/LinearAlgebra/Matrix/GeneralLinearGroup/Card.lean:105) | the def is also snake_case (open NAME-A4 row); fixing only `linearIndependent` leaves a snake_case def — rename the whole thing (e.g. `equivGLLinearIndependent`); taste |

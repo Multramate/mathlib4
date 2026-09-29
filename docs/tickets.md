@@ -26,11 +26,11 @@ compile — for those, `Sweep` is part of the ticket, not a follow-up.
 ## Tiers
 
 - **T1 — Ready to write.** Findings already marked `confirmed` in `typos.md`: someone has checked them by hand. Start here.  
-  21 tickets, 160 findings, 142 files.
+  21 tickets, 162 findings, 144 files.
 - **T2 — Mechanical, needs a skim.** Untriaged findings in categories where every row is the same substitution. A ticket is one decision plus a read-through.  
   119 tickets, 2036 findings, 1596 files.
 - **T3 — Needs triage first.** Untriaged findings needing a judgement at every site. Triage them in `typos.md` before opening a pull request; they graduate to T1 as you do.  
-  313 tickets, 5107 findings, 2397 files.
+  313 tickets, 5105 findings, 2395 files.
 
 ## T1 — Ready to write
 
@@ -39,13 +39,13 @@ compile — for those, `Sweep` is part of the ticket, not a follow-up.
 | [T1-001](#t1-001) | chore: UpperCamelCase for Prop-valued definitions | NAME-A2 | `List.lex_chains` → `LexChains` | 1 | 1 | 1 |
 | [T1-002](#t1-002) | chore: UpperCamelCase for Type-valued definitions | NAME-A3 | 3 substitutions | 2 | 3 | 57 |
 | [T1-003](#t1-003) | chore: UpperCamelCase for structures and classes | NAME-A5 | 2 substitutions | 2 | 2 | 78 |
-| [T1-004](#t1-004) | chore: lowerCamelCase for instance names | NAME-A7 | 2 substitutions | 2 | 2 | 1 |
+| [T1-004](#t1-004) | chore: lowerCamelCase for instance names | NAME-A7 | 3 substitutions | 3 | 3 | 157 |
 | [T1-005](#t1-005) | chore: fix typos in declaration names | NAME-B1 | 8 substitutions | 7 | 8 | 1 |
 | [T1-006](#t1-006) | chore: fix unknown camelCase tokens in names | NAME-B2 | 15 substitutions | 10 | 15 | — |
 | [T1-007](#t1-007) | chore: fix unknown camelCase tokens in names | NAME-B2 | 11 substitutions | 10 | 11 | 1 |
 | [T1-008](#t1-008) | chore: fix unknown camelCase tokens in names | NAME-B2 | 5 substitutions | 5 | 5 | — |
-| [T1-009](#t1-009) | chore: un-flatten camelCase in names | NAME-B3 | 11 substitutions | 10 | 11 | 13 |
-| [T1-010](#t1-010) | chore: un-flatten camelCase in names | NAME-B3 | 8 substitutions | 8 | 8 | 2 |
+| [T1-009](#t1-009) | chore: un-flatten camelCase in names | NAME-B3 | 11 substitutions | 10 | 11 | 16 |
+| [T1-010](#t1-010) | chore: un-flatten camelCase in names | NAME-B3 | 9 substitutions | 9 | 9 | 5 |
 | [T1-011](#t1-011) | chore: use camelCase spellings in names | NAME-C1 | 11 substitutions | 10 | 11 | 3 |
 | [T1-012](#t1-012) | chore: use camelCase spellings in names | NAME-C1 | 10 substitutions | 10 | 10 | 12 |
 | [T1-013](#t1-013) | chore: use camelCase spellings in names | NAME-C1 | 10 substitutions | 10 | 10 | 26 |
@@ -282,8 +282,8 @@ compile — for those, `Sweep` is part of the ticket, not a follow-up.
 | [T3-094](#t3-094) | chore: lowerCamelCase for data-valued instances | NAME-A6 | 4 substitutions | 4 | 7 | 3 |
 | [T3-095](#t3-095) | chore: lowerCamelCase for instance names | NAME-A7 | 17 substitutions | 10 | 17 | 635 |
 | [T3-096](#t3-096) | chore: lowerCamelCase for instance names | NAME-A7 | 14 substitutions | 10 | 14 | 165 |
-| [T3-097](#t3-097) | chore: lowerCamelCase for instance names | NAME-A7 | 12 substitutions | 10 | 12 | 1497 |
-| [T3-098](#t3-098) | chore: lowerCamelCase for instance names | NAME-A7 | 8 substitutions | 5 | 8 | 28 |
+| [T3-097](#t3-097) | chore: lowerCamelCase for instance names | NAME-A7 | 12 substitutions | 10 | 12 | 1399 |
+| [T3-098](#t3-098) | chore: lowerCamelCase for instance names | NAME-A7 | 7 substitutions | 4 | 7 | 27 |
 | [T3-099](#t3-099) | chore: fix casing of structure fields | NAME-A8 | 10 substitutions | 5 | 10 | 981 |
 | [T3-100](#t3-100) | chore: fix casing of structure fields | NAME-A8 | 4 substitutions | 10 | 11 | 434 |
 | [T3-101](#t3-101) | chore: fix casing of structure fields | NAME-A8 | `carrier : Type u` → `carrier` | 12 | 25 | 412 |
@@ -388,7 +388,7 @@ compile — for those, `Sweep` is part of the ticket, not a follow-up.
 | [T3-200](#t3-200) | chore: fix unknown camelCase tokens in names | NAME-B2 | 20 substitutions | 10 | 20 | 8 |
 | [T3-201](#t3-201) | chore: fix unknown camelCase tokens in names | NAME-B2 | 12 substitutions | 10 | 12 | 2 |
 | [T3-202](#t3-202) | chore: fix unknown camelCase tokens in names | NAME-B2 | 8 substitutions | 6 | 8 | 6 |
-| [T3-203](#t3-203) | chore: un-flatten camelCase in names | NAME-B3 | 7 substitutions | 7 | 7 | 16 |
+| [T3-203](#t3-203) | chore: un-flatten camelCase in names | NAME-B3 | 6 substitutions | 6 | 6 | 10 |
 | [T3-204](#t3-204) | chore: use camelCase spellings in names | NAME-C1 | 11 substitutions | 10 | 11 | 22 |
 | [T3-205](#t3-205) | chore: use camelCase spellings in names | NAME-C1 | 13 substitutions | 10 | 13 | 33 |
 | [T3-206](#t3-206) | chore: use camelCase spellings in names | NAME-C1 | 14 substitutions | 10 | 14 | 3 |
@@ -543,16 +543,17 @@ Change: `CategoryTheory.coherentTopology.struct` → `Struct`, `LinearAlgebra.Fr
 
 ### T1-004
 
-**chore: lowerCamelCase for instance names** — Instances named in UpperCamelCase (`NAME-A7`), mixed, 2 file(s), 2 finding(s).
+**chore: lowerCamelCase for instance names** — Instances named in UpperCamelCase (`NAME-A7`), mixed, 3 file(s), 3 finding(s).
 
-Declaration rename: add a deprecated alias so the pull request stays in the declaring file; up to 1 file(s) mention these names and are a follow-up sweep.
+Declaration rename: add a deprecated alias so the pull request stays in the declaring file; up to 157 file(s) mention these names and are a follow-up sweep.
 
-Change: `CategoryTheory.Pretopology.LE` → `(anonymous instance)`, `List.LE'` → `(anonymous instance)`
+Change: `CategoryTheory.Pretopology.LE` → `(anonymous instance)`, `List.LE'` → `(anonymous instance)`, `RayVector.Setoid` → `(anonymous instance)`
 
 | Location | Finding | Detail | Note |
 |---|---|---|---|
 | `Mathlib/CategoryTheory/Sites/Pretopology.lean:80` | `CategoryTheory.Pretopology.LE` | (low) UpperCamelCase instance name | → `(anonymous instance)`. make the instance anonymous (the name `LE` shadows the class in the namespace); replace the one `{ Pretopology.LE with … }` by `(inferInstance : LE _)`; no alias |
 | `Mathlib/Data/List/Lex.lean:147` | `List.LE'` | (low) UpperCamelCase instance name | → `(anonymous instance)`. make the instance anonymous; never referenced by name; no alias |
+| `Mathlib/LinearAlgebra/Ray.lean:220` | `RayVector.Setoid` | (low) UpperCamelCase instance name | fix: `(anonymous instance)` — drop the name (house rule: instances are anonymous, no alias); `Module.Ray` becomes `Quotient (inferInstance : Setoid (RayVector R M))`, and update the docstring at l.48 |
 
 ### T1-005
 
@@ -637,13 +638,14 @@ Change: `vAddAntidiagonal` → `sum_vaddAntidiagonal_eq`, `primitiveRoot` → `e
 
 **chore: un-flatten camelCase in names** — Flattened camelCase (`relindex` for `relIndex`) (`NAME-B3`), mixed, 10 file(s), 11 finding(s).
 
-Declaration rename: add a deprecated alias so the pull request stays in the declaring file; up to 13 file(s) mention these names and are a follow-up sweep.
+Declaration rename: add a deprecated alias so the pull request stays in the declaring file; up to 16 file(s) mention these names and are a follow-up sweep.
 
-Change: `boolalg` → `ofBoolAlg_symmDiff_aux`, `fullyfaithful` → `fullyFaithful`, `pseudoequal` → `eq_range_of_pseudoEqual`, `fullsubcategory` → `fullSubcategory`, `whiskerleft` → `whiskerLeft_id`, `prelaxfunctor` → `prelaxFunctor`, `foldlm` → `foldlM`, `foldrm` → `foldrM`, `nezero` → `castLT_sub_ne_zero`, `castpred` → `castPred_succ_le_iff`, `mvfunctor` → `(anonymous instance)`
+Change: `boolalg` → `ofBoolAlg_symmDiff_aux`, `quasicompact` → `(anonymous instance)`, `fullyfaithful` → `fullyFaithful`, `pseudoequal` → `eq_range_of_pseudoEqual`, `fullsubcategory` → `fullSubcategory`, `whiskerleft` → `whiskerLeft_id`, `prelaxfunctor` → `prelaxFunctor`, `foldlm` → `foldlM`, `foldrm` → `foldrM`, `nezero` → `castLT_sub_ne_zero`, `castpred` → `castPred_succ_le_iff`
 
 | Location | Finding | Detail | Note |
 |---|---|---|---|
 | `Mathlib/Algebra/Ring/BooleanRing.lean:277` | `boolalg` | (medium) `boolalg` (1×) vs `BoolAlg`/`boolAlg`: `of_boolalg_symmDiff_aux` (Mathlib/Algebra/Ring/BooleanRing.lean:277) | → `ofBoolAlg_symmDiff_aux`. private aux lemma for `ofBoolAlg_symmDiff` → `ofBoolAlg_symmDiff_aux` (not `of_boolAlg_…`); private, so no deprecation |
+| `Mathlib/AlgebraicGeometry/Morphisms/FlatDescent.lean:41` | `quasicompact` | (medium) `quasicompact` (1×) vs `QuasiCompact`/`quasiCompact`: `AlgebraicGeometry.Flat.surjective_descendsAlong_surjective_inf_flat_inf_quasicompact` (Mathlib/AlgebraicGeometry/Morphisms/FlatDescent.lean:41) | fix: `(anonymous instance)` — drop the names of all 6 instances (house rule, no aliases) rather than camelCasing them; reword the module docstring bullets (l.19–28), which cite five of them by name |
 | `Mathlib/AlgebraicTopology/SimplicialSet/NerveAdjunction.lean:401` | `fullyfaithful` | (medium) `fullyfaithful` (1×) vs `FullyFaithful`/`fullyFaithful`: `CategoryTheory.nerveFunctor.fullyfaithful` (Mathlib/AlgebraicTopology/SimplicialSet/NerveAdjunction.lean:401) | → `fullyFaithful`. `nerveFunctor.fullyfaithful` → `nerveFunctor.fullyFaithful` (cf. `Spec.fullyFaithful : Scheme.Spec.FullyFaithful`); unused elsewhere |
 | `Mathlib/CategoryTheory/Abelian/Pseudoelements.lean:439` | `pseudoequal` | (medium) `pseudoequal` (1×) vs `PseudoEqual`/`pseudoEqual`: `CategoryTheory.Abelian.Pseudoelement.ModuleCat.eq_range_of_pseudoequal` (Mathlib/CategoryTheory/Abelian/Pseudoelements.lean:439) | → `eq_range_of_pseudoEqual`. hypothesis is `PseudoEqual`, written `pseudoEqual` in the file's other names; also update Counterexamples/Pseudoelement.lean:72 |
 | `Mathlib/CategoryTheory/Bicategory/Functor/Cat/ObjectProperty.lean:126` | `fullsubcategory` | (medium) `fullsubcategory` (1×) vs `FullSubcategory`/`fullSubcategory`: `CategoryTheory.Pseudofunctor.ObjectProperty.fullsubcategory` (Mathlib/CategoryTheory/Bicategory/Functor/Cat/ObjectProperty.lean:126) | → `fullSubcategory`. → `fullSubcategory` (cf. `MonoidalCategory.fullSubcategory`); `@[simps]` lemmas need aliases too; update the docstrings that cite it |
@@ -653,18 +655,18 @@ Change: `boolalg` → `ofBoolAlg_symmDiff_aux`, `fullyfaithful` → `fullyFaithf
 | `Mathlib/Control/Fold.lean:225` | `foldrm` | (medium) `foldrm` (3×) vs `foldrM`: `Traversable.foldrm` (Mathlib/Control/Fold.lean:225), `Traversable.foldrm_toList` (Mathlib/Control/Fold.lean:380), `Traversable.foldrm_map` (Mathlib/Control/Fold.lean:392) | → `foldrM`, `foldrM.ofFreeMonoid_comp_of`, `foldrM_toList`, `foldrM_map`. `Traversable.foldrm` → `foldrM` (core's monadic spelling, `List.foldrM`); needs row 3 (`Monoid.foldrM` → `FoldrM`) in the same PR to free the name; Fold.lean only |
 | `Mathlib/Data/Fin/Basic.lean:341` | `nezero` | (medium) `nezero` (1×) vs `NeZero`/`neZero`/`neZero'`: `Fin.castLT_sub_nezero` (Mathlib/Data/Fin/Basic.lean:341) | → `castLT_sub_ne_zero`. REVISED: → `castLT_sub_ne_zero`, not `neZero`: the conclusion is `≠ 0`, and `NeZero` only appears in a `haveI`; 2 uses in GroupTheory/Perm/Fin.lean |
 | `Mathlib/Data/Fin/SuccPred.lean:422` | `castpred` | (medium) `castpred` (1×) vs `castPred`: `Fin.castpred_succ_le_iff` (Mathlib/Data/Fin/SuccPred.lean:422) | → `castPred_succ_le_iff`. `castpred_succ_le_iff` → `castPred_succ_le_iff` (sibling `lt_castPred_succ_iff`); no collision |
-| `Mathlib/Data/QPF/Multivariate/Constructions/Cofix.lean:119` | `mvfunctor` | (medium) `mvfunctor` (3×) vs `MvFunctor`/`mvFunctor`: `MvQPF.Cofix.mvfunctor` (Mathlib/Data/QPF/Multivariate/Constructions/Cofix.lean:119), `MvQPF.Fix.mvfunctor` (Mathlib/Data/QPF/Multivariate/Constructions/Fix.lean:176), `MvQPF.Prj.mvfunctor` (Mathlib/Data/QPF/Multivariate/Constructions/Prj.lean:37) | → `(anonymous instance)`. 3 instances: drop the names (never referenced; the `MvFunctor` instances for Sigma/Pi/Comp are already anonymous); no aliases |
 
 ### T1-010
 
-**chore: un-flatten camelCase in names** — Flattened camelCase (`relindex` for `relIndex`) (`NAME-B3`), mixed, 8 file(s), 8 finding(s).
+**chore: un-flatten camelCase in names** — Flattened camelCase (`relindex` for `relIndex`) (`NAME-B3`), mixed, 9 file(s), 9 finding(s).
 
-Declaration rename: add a deprecated alias so the pull request stays in the declaring file; up to 2 file(s) mention these names and are a follow-up sweep.
+Declaration rename: add a deprecated alias so the pull request stays in the declaring file; up to 5 file(s) mention these names and are a follow-up sweep.
 
-Change: `sfinite` → `sFinite`, `sizeof` → `sizeOf_pos`, `copolarization` → `ker_coPolarization_eq_ker_corootForm`, `ltensor` → `baseChange_eq_lTensor`, `fgequiv` → `countable_self_fgEquiv_of_countable`, `partialorder` → `(anonymous instance)`, `powerseries` → `ringKrullDim_succ_le_ringKrullDim_powerSeries`, `leadingcoeff` → `T_leadingCoeff_isUnit`
+Change: `mvfunctor` → `(anonymous instance)`, `sfinite` → `sFinite`, `sizeof` → `sizeOf_pos`, `copolarization` → `ker_coPolarization_eq_ker_corootForm`, `ltensor` → `baseChange_eq_lTensor`, `fgequiv` → `countable_self_fgEquiv_of_countable`, `partialorder` → `(anonymous instance)`, `powerseries` → `ringKrullDim_succ_le_ringKrullDim_powerSeries`, `leadingcoeff` → `T_leadingCoeff_isUnit`
 
 | Location | Finding | Detail | Note |
 |---|---|---|---|
+| `Mathlib/Data/QPF/Multivariate/Constructions/Cofix.lean:119` | `mvfunctor` | (medium) `mvfunctor` (3×) vs `MvFunctor`/`mvFunctor`: `MvQPF.Cofix.mvfunctor` (Mathlib/Data/QPF/Multivariate/Constructions/Cofix.lean:119), `MvQPF.Fix.mvfunctor` (Mathlib/Data/QPF/Multivariate/Constructions/Fix.lean:176), `MvQPF.Prj.mvfunctor` (Mathlib/Data/QPF/Multivariate/Constructions/Prj.lean:37) | → `(anonymous instance)`. 3 instances: drop the names (never referenced; the `MvFunctor` instances for Sigma/Pi/Comp are already anonymous); no aliases |
 | `Mathlib/Dynamics/Ergodic/MeasurePreserving.lean:137` | `sfinite` | (medium) `sfinite` (4×) vs `sFinite`: `MeasureTheory.MeasurePreserving.sfinite` (Mathlib/Dynamics/Ergodic/MeasurePreserving.lean:137), `MeasureTheory.Measure.compProd_of_not_sfinite` (Mathlib/Probability/Kernel/Composition/MeasureCompProd.lean:49), `MeasureTheory.sfinite_sum_of_countable` (Mathlib/MeasureTheory/Measure/Typeclasses/SFinite.lean:56) | open as #44292 (in the bors queue). all handled by #44292 (approved, in the bors queue; instances made anonymous); check it merged before marking fixed |
 | `Mathlib/GroupTheory/FreeGroup/Basic.lean:331` | `sizeof` | (medium) `sizeof` (3×) vs `sizeOf`: `FreeGroup.Red.sizeof_of_step` (Mathlib/GroupTheory/FreeGroup/Basic.lean:331), `Lists.sizeof_pos` (Mathlib/SetTheory/Lists.lean:319), `Lists.lt_sizeof_cons'` (Mathlib/SetTheory/Lists.lean:323) | → `sizeOf_pos`, `lt_sizeOf_cons'`. rename the two `Lists` lemmas to `sizeOf` (as `sizeOf_kerase`, core); skip `FreeGroup.Red.sizeof_of_step`, deprecated since 2026-04-10 |
 | `Mathlib/LinearAlgebra/RootSystem/Finite/CanonicalBilinear.lean:132` | `copolarization` | (medium) `copolarization` (1×) vs `CoPolarization`/`coPolarization`: `RootPairing.ker_copolarization_eq_ker_corootForm` (Mathlib/LinearAlgebra/RootSystem/Finite/CanonicalBilinear.lean:132) | → `ker_coPolarization_eq_ker_corootForm`. → `ker_coPolarization_eq_ker_corootForm` (as `self_comp_coPolarization_eq_corootForm`); the statement uses `P.CoPolarization` |
@@ -6369,9 +6371,9 @@ Change: `CategoryTheory.Functor.IsPreFibered.pullbackMap.IsCartesian`, `Category
 
 **chore: lowerCamelCase for instance names** — Instances named in UpperCamelCase (`NAME-A7`), mixed, 10 file(s), 12 finding(s).
 
-Declaration rename: add a deprecated alias so the pull request stays in the declaring file; up to 1497 file(s) mention these names and are a follow-up sweep.
+Declaration rename: add a deprecated alias so the pull request stays in the declaring file; up to 1399 file(s) mention these names and are a follow-up sweep.
 
-Change: `Quot.Subsingleton`, `Sigma.Lex.LE`, `Sigma.Lex.LT`, `Sum.Lex.LE`, `Sum.Lex.LT`, `RayVector.Setoid`, `MeasureTheory.ProbabilityMeasure.R1Space`, `MeasureTheory.Lp.SecondCountableTopology`, `ModularForm.SLAction`, `ProbabilityTheory.IsMarkovKernel.IsZeroOrMarkovKernel`, `groupCohomology.H1ofAutOnUnitsUnique`, `HahnModule.SMulCommClass`
+Change: `Quot.Subsingleton`, `Sigma.Lex.LE`, `Sigma.Lex.LT`, `Sum.Lex.LE`, `Sum.Lex.LT`, `MeasureTheory.ProbabilityMeasure.R1Space`, `MeasureTheory.Lp.SecondCountableTopology`, `ModularForm.SLAction`, `ProbabilityTheory.IsMarkovKernel.IsZeroOrMarkovKernel`, `groupCohomology.H1ofAutOnUnitsUnique`, `HahnModule.SMulCommClass`, `integralClosure.AlgebraIsIntegral`
 
 | Location | Finding | Detail | Note |
 |---|---|---|---|
@@ -6380,25 +6382,24 @@ Change: `Quot.Subsingleton`, `Sigma.Lex.LE`, `Sigma.Lex.LT`, `Sum.Lex.LE`, `Sum.
 | `Mathlib/Data/Sigma/Order.lean:132` | `Sigma.Lex.LT` | (low) UpperCamelCase instance name |  |
 | `Mathlib/Data/Sum/Order.lean:295` | `Sum.Lex.LE` | (low) UpperCamelCase instance name |  |
 | `Mathlib/Data/Sum/Order.lean:299` | `Sum.Lex.LT` | (low) UpperCamelCase instance name |  |
-| `Mathlib/LinearAlgebra/Ray.lean:220` | `RayVector.Setoid` | (low) UpperCamelCase instance name | used by name in `Module.Ray := Quotient (RayVector.Setoid R M)` and a docstring; anonymous needs `Quotient (inferInstance : Setoid _)`, else lowerCamel `setoid` — decide |
 | `Mathlib/MeasureTheory/Measure/ProbabilityMeasure.lean:344` | `MeasureTheory.ProbabilityMeasure.R1Space` | (low) UpperCamelCase instance name |  |
 | `Mathlib/MeasureTheory/Measure/SeparableMeasure.lean:426` | `MeasureTheory.Lp.SecondCountableTopology` | (low) UpperCamelCase instance name |  |
 | `Mathlib/NumberTheory/ModularForms/SlashActions.lean:150` | `ModularForm.SLAction` | (low) UpperCamelCase instance name |  |
 | `Mathlib/Probability/Kernel/Defs.lean:215` | `ProbabilityTheory.IsMarkovKernel.IsZeroOrMarkovKernel` | (low) UpperCamelCase instance name |  |
 | `Mathlib/RepresentationTheory/Homological/GroupCohomology/Hilbert90.lean:107` | `groupCohomology.H1ofAutOnUnitsUnique` | (low) UpperCamelCase instance name |  |
 | `Mathlib/RingTheory/HahnSeries/Multiplication.lean:733` | `HahnModule.SMulCommClass` | (low) UpperCamelCase instance name |  |
+| `Mathlib/RingTheory/IntegralClosure/IsIntegralClosure/Basic.lean:193` | `integralClosure.AlgebraIsIntegral` | (low) UpperCamelCase instance name |  |
 
 ### T3-098
 
-**chore: lowerCamelCase for instance names** — Instances named in UpperCamelCase (`NAME-A7`), mixed, 5 file(s), 8 finding(s).
+**chore: lowerCamelCase for instance names** — Instances named in UpperCamelCase (`NAME-A7`), mixed, 4 file(s), 7 finding(s).
 
-Declaration rename: add a deprecated alias so the pull request stays in the declaring file; up to 28 file(s) mention these names and are a follow-up sweep.
+Declaration rename: add a deprecated alias so the pull request stays in the declaring file; up to 27 file(s) mention these names and are a follow-up sweep.
 
-Change: `integralClosure.AlgebraIsIntegral`, `NONote.NF`, `Mathlib.Tactic.Linarith.Comp.ToFormat`, `Mathlib.Tactic.Linarith.PreprocessorToGlobalBranchingPreprocessor`, `Mathlib.Tactic.Linarith.GlobalPreprocessorToGlobalBranchingPreprocessor`, `Plausible.Rat.Arbitrary`, `Plausible.PNat.Arbitrary`, `Countable.LindelofSpace`
+Change: `NONote.NF`, `Mathlib.Tactic.Linarith.Comp.ToFormat`, `Mathlib.Tactic.Linarith.PreprocessorToGlobalBranchingPreprocessor`, `Mathlib.Tactic.Linarith.GlobalPreprocessorToGlobalBranchingPreprocessor`, `Plausible.Rat.Arbitrary`, `Plausible.PNat.Arbitrary`, `Countable.LindelofSpace`
 
 | Location | Finding | Detail | Note |
 |---|---|---|---|
-| `Mathlib/RingTheory/IntegralClosure/IsIntegralClosure/Basic.lean:193` | `integralClosure.AlgebraIsIntegral` | (low) UpperCamelCase instance name |  |
 | `Mathlib/SetTheory/Ordinal/Notation.lean:1137` | `NONote.NF` | (low) UpperCamelCase instance name |  |
 | `Mathlib/Tactic/Linarith/Datatypes.lean:173` | `Mathlib.Tactic.Linarith.Comp.ToFormat` | (low) UpperCamelCase instance name |  |
 | `Mathlib/Tactic/Linarith/Datatypes.lean:257` | `Mathlib.Tactic.Linarith.PreprocessorToGlobalBranchingPreprocessor` | (low) UpperCamelCase instance name |  |
@@ -8972,15 +8973,14 @@ Change: `compactConvergence` → `compactConvergenceCLM`, `uniformFunOfFun` → 
 
 ### T3-203
 
-**chore: un-flatten camelCase in names** — Flattened camelCase (`relindex` for `relIndex`) (`NAME-B3`), mixed, 7 file(s), 7 finding(s).
+**chore: un-flatten camelCase in names** — Flattened camelCase (`relindex` for `relIndex`) (`NAME-B3`), mixed, 6 file(s), 6 finding(s).
 
-Declaration rename: add a deprecated alias so the pull request stays in the declaring file; up to 16 file(s) mention these names and are a follow-up sweep.
+Declaration rename: add a deprecated alias so the pull request stays in the declaring file; up to 10 file(s) mention these names and are a follow-up sweep.
 
-Change: `quasicompact` → `QuasiCompact`, `birkhoffaverage` → `birkhoffAverage`, `mapsto` → `MapsTo`, `linearindependent` → `LinearIndependent`, `spanrank` → `spanRank`, `grewrite` → `gRewrite`, `pcontinuous` → `pContinuous`
+Change: `birkhoffaverage` → `birkhoffAverage`, `mapsto` → `MapsTo`, `linearindependent` → `LinearIndependent`, `spanrank` → `spanRank`, `grewrite` → `gRewrite`, `pcontinuous` → `pContinuous`
 
 | Location | Finding | Detail | Note |
 |---|---|---|---|
-| `Mathlib/AlgebraicGeometry/Morphisms/FlatDescent.lean:41` | `quasicompact` | (medium) `quasicompact` (1×) vs `QuasiCompact`/`quasiCompact`: `AlgebraicGeometry.Flat.surjective_descendsAlong_surjective_inf_flat_inf_quasicompact` (Mathlib/AlgebraicGeometry/Morphisms/FlatDescent.lean:41) | the camelCase fix `quasiCompact` is right, but these are 6 named instances: drop the names (house rule) or keep them because the module docstring cites them? 6 named instances (not 1) spell `@QuasiCompact` as `quasicompact`; rename to `quasiCompact` (cf. `descendsAlong_inf_quasiCompact`) + 5 docstring refs; keep names (docstring cites them), no aliases |
 | `Mathlib/Dynamics/Ergodic/EmpiricalMeasure.lean:71` | `birkhoffaverage` | (medium) `birkhoffaverage` (1×) vs `birkhoffAverage`: `MeasureTheory.integral_empiricalMeasure_eq_birkhoffaverage` (Mathlib/Dynamics/Ergodic/EmpiricalMeasure.lean:71) |  |
 | `Mathlib/Geometry/Manifold/Immersion.lean:268` | `mapsto` | (medium) `mapsto` (3×) vs `MapsTo`/`mapsTo`: `Manifold.IsImmersionAtOfComplement.mapsto_domChart_source_codChart_source` (Mathlib/Geometry/Manifold/Immersion.lean:268), `Manifold.LocalPresentationAt.mapsto_domChart_source_codChart_source` (Mathlib/Geometry/Manifold/LocalSourceTargetProperty.lean:110), `Manifold.IsSubmersionAtOfComplement.mapsto_domChart_source_codChart_source` (Mathlib/Geometry/Manifold/Submersion.lean:241) |  |
 | `Mathlib/LinearAlgebra/Matrix/GeneralLinearGroup/Card.lean:105` | `linearindependent` | (medium) `linearindependent` (1×) vs `LinearIndependent`/`linearIndependent`/`linearIndependent'`: `Matrix.equiv_GL_linearindependent` (Mathlib/LinearAlgebra/Matrix/GeneralLinearGroup/Card.lean:105) | the def is also snake_case (open NAME-A4 row); fixing only `linearIndependent` leaves a snake_case def — rename the whole thing (e.g. `equivGLLinearIndependent`); taste |
