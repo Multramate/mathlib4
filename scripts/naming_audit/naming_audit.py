@@ -340,7 +340,8 @@ def extract_file(path: str, root: str) -> list:
         attr_text = ""
         mods = []
         while True:
-            while i < nxt and text[i].isspace():
+            # An attribute may sit on its own line(s) above the declaration it belongs to.
+            while i < n and text[i].isspace():
                 i += 1
             if text.startswith("@[", i):
                 j = find_matching_bracket(text, i + 1)
@@ -360,6 +361,13 @@ def extract_file(path: str, root: str) -> list:
                 break
         if kw is None:
             continue
+        if i >= nxt:
+            # The attributes ran over several lines: the declaration ends at the first top-level line
+            # after its keyword, not after the attribute line we started from.
+            k = pi
+            while k < len(positions) and positions[k] <= i:
+                k += 1
+            nxt = positions[k] if k < len(positions) else n
         j = i + len(kw)
         while j < nxt and text[j].isspace():
             j += 1

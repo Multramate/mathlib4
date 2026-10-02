@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 """
-Build `docs/tickets.md` — the open findings of `docs/typos.md`, grouped into batches sized for
-individual pull requests.
+Build `docs/tickets.md` — the open findings of `docs/typos.md`, grouped into tickets that are each
+meant to become one pull request.
 
-The grouping rule comes from review practice: a machine-generated pull request should not edit more
-than **10 files**, because a reviewer forms a separate judgement about each one.  The exception is a
-pull request applying a **single mechanical substitution** — the same wrong spelling replaced by the
-same right one everywhere — where reading the whole diff is reading one decision; those may span up
-to **300 files**.  So a substitution touching more than ten files becomes a ticket of its own, split
-at three hundred, and everything else is packed in path order into tickets of at most ten files, which
-keeps a ticket inside one area of the library.
+A ticket is one category in one tier: every finding of that kind, however many files it touches.
+There is no file cap — a reviewer reads one kind of change throughout, so splitting a category only
+multiplies the pull requests.
 
 Tickets are tiered, because several thousand findings is a backlog rather than a plan:
 
@@ -38,9 +34,7 @@ import collections
 import datetime
 import os
 import re
-import sys
 
-UNIFORM_CAP, BESPOKE_CAP = 300, 10
 CELL = re.compile(r"(?<!\\)\|")
 STATUSES = ("open", "confirmed", "fp", "fixed", "wontfix")
 TOKEN = re.compile(r"[A-Za-z_][A-Za-z0-9_'!?]*")
@@ -76,8 +70,8 @@ PR_TITLE = {
     "NAME-A3": "chore: UpperCamelCase for Type-valued definitions",
     "NAME-A4": "chore: lowerCamelCase for data definitions",
     "NAME-A5": "chore: UpperCamelCase for structures and classes",
-    "NAME-A6": "chore: lowerCamelCase for data-valued instances",
-    "NAME-A7": "chore: lowerCamelCase for instance names",
+    "NAME-A6": "chore: drop the names of snake_case data instances",
+    "NAME-A7": "chore: drop the names of UpperCamelCase instances",
     "NAME-A8": "chore: fix casing of structure fields",
     "NAME-A9": "chore: fix casing of inductive constructors",
     "NAME-A10": "chore: remove underscores from namespaces",
@@ -192,9 +186,13 @@ NOTE_FIX = re.compile(r"(?:should be|→|fix:)\s*`([^`]+)`")
 NOTE_DEPRECATE = re.compile(r"^deprecate\s*`([^`]+)`")
 
 
+# Categories whose finding is a word written twice in a row; the fix deletes one copy.
+DOUBLED = {"DOC-C3", "DATA-Y2", "STR-S3"}
+
+
 def change_key(r: dict) -> tuple:
-    if r["cat"] in ("DOC-C3",):
-        return (r["name"],)
+    if r["cat"] in DOUBLED:
+        return ("doubled", r["name"])
     dep = NOTE_DEPRECATE.search(r["note"])
     if dep:
         return ("deprecate", dep.group(1))
@@ -208,6 +206,8 @@ def change_key(r: dict) -> tuple:
 
 
 def describe(key: tuple) -> str:
+    if key[0] == "doubled":
+        return f"`{key[1]} {key[1]}` → `{key[1]}`"
     if key[0] == "deprecate":
         return f"deprecate `{key[1]}`"
     return f"`{key[0]}` → `{key[1]}`" if len(key) >= 2 else f"`{key[0]}`"
@@ -248,41 +248,12 @@ def build(live, names, imports):
         for cat in list(dict.fromkeys(r["cat"] for r in trows)):
             crows = sorted((r for r in trows if r["cat"] == cat),
                            key=lambda r: (r["file"], r["line"]))
-            groups = collections.OrderedDict()
-            for r in crows:
-                groups.setdefault(change_key(r), []).append(r)
-            leftovers = []
-            for key, grp in groups.items():
-                files = list(dict.fromkeys(r["file"] for r in grp))
-                if len(files) <= BESPOKE_CAP:
-                    leftovers.append((key, grp))
-                    continue
-                parts = (len(files) + UNIFORM_CAP - 1) // UNIFORM_CAP
-                for i in range(0, len(files), UNIFORM_CAP):
-                    chunk = set(files[i:i + UNIFORM_CAP])
-                    sub = [r for r in grp if r["file"] in chunk]
-                    tickets.append({"tier": tier, "cat": cat, "cat_title": grp[0]["cat_title"],
-                                    "kind": "one substitution", "changes": [describe(key)],
-                                    "files": sorted(chunk), "rows": sub,
-                                    "part": i // UNIFORM_CAP + 1, "parts": parts,
-                                    "sweep": sweep_of(sub)})
-            cf, cr, ck = [], [], []
-            for key, grp in sorted(leftovers, key=lambda kg: kg[1][0]["file"]):
-                gf = list(dict.fromkeys(r["file"] for r in grp))
-                if cf and len(set(cf) | set(gf)) > BESPOKE_CAP:
-                    tickets.append({"tier": tier, "cat": cat, "cat_title": cr[0]["cat_title"],
-                                    "kind": "mixed", "changes": [describe(k) for k in ck],
-                                    "files": sorted(set(cf)), "rows": cr, "part": 0, "parts": 0,
-                                    "sweep": sweep_of(cr)})
-                    cf, cr, ck = [], [], []
-                cf.extend(gf)
-                cr.extend(grp)
-                ck.append(key)
-            if cr:
-                tickets.append({"tier": tier, "cat": cat, "cat_title": cr[0]["cat_title"],
-                                "kind": "mixed", "changes": [describe(k) for k in ck],
-                                "files": sorted(set(cf)), "rows": cr, "part": 0, "parts": 0,
-                                "sweep": sweep_of(cr)})
+            keys = list(dict.fromkeys(change_key(r) for r in crows))
+            tickets.append({"tier": tier, "cat": cat, "cat_title": crows[0]["cat_title"],
+                            "kind": "one substitution" if len(keys) == 1 else "mixed",
+                            "changes": [describe(k) for k in keys],
+                            "files": sorted({r["file"] for r in crows}), "rows": crows,
+                            "sweep": sweep_of(crows)})
 
     order = {"T1": 0, "T2": 1, "T3": 2}
     tickets.sort(key=lambda t: (order[t["tier"]], t["cat"], t["files"][0]))
@@ -291,8 +262,6 @@ def build(live, names, imports):
         seq[t["tier"]] += 1
         t["id"] = f"{t['tier']}-{seq[t['tier']]:03d}"
         t["title"] = title_for(t["cat"])
-        if t["parts"] > 1:
-            t["title"] += f" ({t['part']}/{t['parts']})"
     return tickets
 
 
@@ -314,13 +283,9 @@ def render(tickets, live, out_path, swept):
     L.append("")
     L.append("## Sizing")
     L.append("")
-    L.append(f"At most **{BESPOKE_CAP} files** per ticket — a reviewer forms a separate judgement "
-             "about each file.")
-    L.append(f"A ticket applying a **single mechanical substitution** may span up to "
-             f"**{UNIFORM_CAP} files**,")
-    L.append("because reading that whole diff is reading one decision; the `Kind` column says which")
-    L.append("rule a ticket is under. Tickets are packed in path order, so one ticket stays inside one")
-    L.append("area of the library.")
+    L.append("A ticket is one category in one tier — every finding of that kind, however many files")
+    L.append("it touches. There is no file cap: a reviewer reads one kind of change throughout, so")
+    L.append("splitting a category would only multiply the pull requests.")
     L.append("")
     L.append("Two kinds of ticket cost more than the files they list. A **declaration rename** moves")
     L.append("every call site: keep the old name with `@[deprecated (since := \"…\")] alias old := new`")
@@ -416,17 +381,11 @@ def main():
     tickets = build(live, names, imports)
     render(tickets, live, out, not args.no_sweep)
 
-    bad = [t for t in tickets if t["kind"] != "one substitution" and len(t["files"]) > BESPOKE_CAP]
-    worse = [t for t in tickets if len(t["files"]) > UNIFORM_CAP]
     print(f"{len(tickets)} tickets -> {out}")
     for tier in ("T1", "T2", "T3"):
         tt = [t for t in tickets if t["tier"] == tier]
         print(f"  {tier}: {len(tt):4} tickets, {sum(len(t['rows']) for t in tt):5} findings, "
               f"{len({f for t in tt for f in t['files']}):5} files")
-    print(f"  over the {BESPOKE_CAP}-file cap: {len(bad)}; "
-          f"over the {UNIFORM_CAP}-file cap: {len(worse)}")
-    if bad or worse:
-        sys.exit(1)
 
 
 if __name__ == "__main__":

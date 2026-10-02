@@ -86,7 +86,7 @@ MD_DIRS = (".github", "Archive", "Cache", "DownstreamTest", "docs", "scripts", "
 LOOSE = ("bors.toml", ".gitpod.yml", "scripts/downstream_repos.yml")
 SKIP_FILES = frozenset((
     "docs/naming_audit.md", "docs/comment_audit.md", "docs/typos.md", "docs/tickets.md",
-    "docs/audit_fix_plan.md",
+    "docs/typo_triage.md", "docs/audit_fix_plan.md",
 ))
 SKIP_DIRS = ("scripts/naming_audit/", "scripts/comment_audit/", "scripts/typo_audit/",
              "scripts/audit_plan/")
