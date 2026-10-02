@@ -72,7 +72,8 @@ file used by the library's own linters.
   Lean string literals, the Lean trees outside `Mathlib/`, file and directory names, repository
   markdown and CI files, the `docs/*.yaml` data files and `references.bib`, deprecation metadata,
   and the library-note and notation vocabulary. Like the audits it absorbs, it is a living document
-  whose `Status`/`Note` cells survive a re-run.
+  whose `Status`/`Note` cells survive a re-run. `docs/typo_triage.md` records the rules its rows
+  are triaged by, and `docs/typo_review.jsonl` the per-declaration verdicts behind each note.
 - `typo_audit/context.py`
   The yardstick every source module is judged against: Mathlib's own comment vocabulary, an
   optional English dictionary, and the suggestion engine. Built from comments under `Mathlib/`,
@@ -81,9 +82,8 @@ file used by the library's own linters.
   against the tree, which is the development loop for adding a surface.
 - `typo_audit/tickets.py`
   Reads `docs/typos.md` and writes `docs/tickets.md`, grouping the still-open findings into
-  tickets that are each meant to become one pull request: at most ten files, except for a ticket
-  applying a single mechanical substitution, which may span up to three hundred. Tickets are tiered by
-  readiness — already `confirmed`, mechanical but untriaged, and needing a judgement at every site
+  tickets that are each meant to become one pull request: one ticket per category and tier, with no
+  cap on the number of files. Tickets are tiered by readiness — already `confirmed`, mechanical but untriaged, and needing a judgement at every site
   — so re-running after triage moves rows between tiers. `--no-sweep` skips the indexes that size a
   declaration rename's follow-up and a file rename's import fan-out.
 - `fix_unused.py`
