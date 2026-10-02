@@ -40,6 +40,14 @@ sys.path.insert(0, os.path.join(HERE, "sources"))
 from context import Context  # noqa: E402
 
 CELL = re.compile(r"(?<!\\)\|")
+ESCAPED_PIPE = re.compile(r"\\+\|")
+
+
+def unescape(cell: str) -> str:
+    """A table cell's text with its `\\|` escapes removed (however many times it was escaped)."""
+    return ESCAPED_PIPE.sub("|", cell)
+
+
 STATUSES = ("open", "confirmed", "fp", "fixed", "wontfix")
 
 # Where each group of categories comes from, and the prefix its ids get in the combined document.
@@ -86,17 +94,17 @@ def parse_audit(path: str, prefix: str) -> tuple:
                 continue
             loc = cells[2].strip("`")
             file, _, lineno = loc.rpartition(":")
-            rows.append({"cat": cat, "status": cells[0], "name": cells[1].strip("`"),
+            rows.append({"cat": cat, "status": cells[0], "name": unescape(cells[1].strip("`")),
                          "file": file or loc, "line": int(lineno) if lineno.isdigit() else 0,
-                         "detail": cells[3], "note": cells[4]})
+                         "detail": unescape(cells[3]), "note": unescape(cells[4])})
     return rows, titles
 
 
 def row_key(cat: str, name: str, file: str, detail: str) -> str:
     """Stable identity of a row across runs: line numbers move, this does not."""
-    quoted = re.findall(r"`([^`]*)`", detail)
+    quoted = re.findall(r"`([^`]*)`", unescape(detail))
     tail = quoted[-1] if quoted else ""
-    return f"{cat}|{name}|{file}|{tail}"
+    return f"{cat}|{unescape(name)}|{file}|{tail}"
 
 
 def read_existing(path: str) -> dict:
@@ -116,7 +124,7 @@ def read_existing(path: str) -> dict:
                 loc = cells[2].strip("`")
                 file = loc.rpartition(":")[0] or loc
                 # `render` escapes the note again, so undo the escaping it was written with.
-                note = cells[4].replace("\\|", "|")
+                note = unescape(cells[4])
                 out[row_key(cat, cells[1].strip("`"), file, cells[3])] = (cells[0], note)
     return out
 
@@ -155,16 +163,17 @@ def render(groups, existing, out_path, stats):
     L.append("`Status` and `Note` columns, adds new findings as `open`, and drops findings that no")
     L.append("longer apply. **Triage by editing this file.**")
     L.append("")
-    L.append("Statuses: `open` (not yet looked at), `confirmed` (checked by hand, should be fixed),")
-    L.append("`fp` (false positive or accepted exception), `fixed` (corrected; the row disappears on")
-    L.append("the next run), `wontfix` (real but deliberately left alone). Confidence (`conf`) is the")
-    L.append("scanner's own estimate, not a triage verdict.")
+    L.append("Statuses: `open` (not yet looked at, or waiting for a maintainer's decision, which the")
+    L.append("note states), `confirmed` (checked by hand, should be fixed), `fp` (false positive or")
+    L.append("accepted exception), `fixed` (corrected; the row disappears on the next run), `wontfix`")
+    L.append("(real but deliberately left alone). Confidence (`conf`) is the scanner's own estimate, not")
+    L.append("a triage verdict. [`typo_triage.md`](typo_triage.md) records the rules rows are triaged by.")
     L.append("")
     L.append(f"Current triage: **{counts['open']} open**, {counts['confirmed']} confirmed, "
              f"{counts['fp']} false positives, {counts['wontfix']} wontfix.")
     L.append("")
-    L.append("[`tickets.md`](tickets.md) turns the open rows here into batches sized for individual")
-    L.append("pull requests. Re-generate it whenever this file changes.")
+    L.append("[`tickets.md`](tickets.md) turns the open rows here into tickets, one pull request per")
+    L.append("category and tier. Re-generate it whenever this file changes.")
     L.append("")
     L.append("## How a finding gets here")
     L.append("")
