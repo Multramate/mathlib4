@@ -14,7 +14,7 @@ accepted exception), `fixed` (corrected; the row disappears on the next run), `w
 (real but deliberately left alone). Confidence (`conf`) is the scanner's own estimate, not
 a triage verdict. [`typo_triage.md`](typo_triage.md) records the rules rows are triaged by.
 
-Current triage: **40 open**, 2847 confirmed, 3907 false positives, 807 wontfix.
+Current triage: **39 open**, 2847 confirmed, 3908 false positives, 807 wontfix.
 
 [`tickets.md`](tickets.md) turns the open rows here into tickets, one pull request per
 category and tier. Re-generate it whenever this file changes.
@@ -59,7 +59,7 @@ the rest of the library writes it, and those counts are in the `Detail` column.
 | [NAME-A9](#name-a9-inductive-constructors-with-unexpected-casing) | Inductive constructors with unexpected casing | 68 | 0 | 11 | 45 | 12 |
 | [NAME-A10](#name-a10-namespaces-containing-underscores) | Namespaces containing underscores | 14 | 0 | 0 | 13 | 1 |
 | [NAME-A11](#name-a11-stray-underscores-in-names) | Stray underscores in names | 13 | 0 | 0 | 0 | 13 |
-| [NAME-B1](#name-b1-probable-spelling-errors-in-name-components) | Probable spelling errors in name components | 261 | 3 | 16 | 242 | 0 |
+| [NAME-B1](#name-b1-probable-spelling-errors-in-name-components) | Probable spelling errors in name components | 261 | 2 | 16 | 243 | 0 |
 | [NAME-B2](#name-b2-camelcase-tokens-that-do-not-correspond-to-any-declaration) | camelCase tokens that do not correspond to any declaration | 914 | 4 | 241 | 650 | 19 |
 | [NAME-B3](#name-b3-flattened-camelcase-relindex-for-relindex) | Flattened camelCase (`relindex` for `relIndex`) | 30 | 1 | 21 | 8 | 0 |
 | [NAME-C1](#name-c1-lean-3-style-snake_case-spellings-of-camelcase-names) | Lean 3 style snake_case spellings of camelCase names | 448 | 1 | 113 | 327 | 7 |
@@ -108,7 +108,7 @@ the rest of the library writes it, and those counts are in the `Detail` column.
 | [VOCAB-1](#vocab-1-misspellings-in-library-note-titles) | Misspellings in library note titles | 0 | 0 | 0 | 0 | 0 |
 | [VOCAB-2](#vocab-2-misspellings-in-declared-syntax-option-and-attribute-names) | Misspellings in declared syntax, option and attribute names | 0 | 0 | 0 | 0 | 0 |
 
-_68 row(s) from the previous version no longer apply and were dropped._
+_14 row(s) from the previous version no longer apply and were dropped._
 
 ## Declaration names
 
@@ -1826,7 +1826,6 @@ Findings about the names of declarations themselves — casing, Lean 3 spellings
 | confirmed | `semicontinuou` | `Mathlib/Topology/Semicontinuity/Basic.lean:941` | (low) `semicontinuou` (1×) vs `semicontinuous` (192×): `lowerSemicontinuouAt_inv_iff` (Mathlib/Topology/Semicontinuity/Basic.lean:941) | → `lowerSemicontinuousAt_inv_iff`. Dropped `s`: the statement is `LowerSemicontinuousAt f⁻¹ a ↔ UpperSemicontinuousAt f a` (siblings `upperSemicontinuousAt_inv_iff`, `lowerSemicontinuousWithinAt_inv_iff`); it is `@[to_additive (attr := simp)]`, so its twin `lowerSemicontinuouAt_neg_iff` → `lowerSemicontinuousAt_neg_iff` too; update the `alias ⟨_, UpperSemicontinuousAt.inv⟩` at l.947. |
 | open | `supsets` | `Mathlib/Data/Set/Lattice/Bounded.lean:206` | (low) `supsets` (1×) vs `subsets` (43×): `Set.sUnion_mono_supsets` (Mathlib/Data/Set/Lattice/Bounded.lean:206) | Pending PR #44328 (`sUnion_mono_supsets` → `sUnion_mono_supersets`), where reviewer JX-Mo objected that no `⊇` occurs in the statement (`hf : ∀ t, f t ⊆ t`). Question: accept `supersets` (Mathlib's `recommended_spelling` for `⊇` is `superset`, the docstring says “superset”, and `sup` in names otherwise means `⊔`), or keep `supsets` as the mirror of `sUnion_mono_subsets`? |
 | open | `mdifferentiablef` | `Mathlib/Geometry/Manifold/MFDeriv/Basic.lean:982` | (low) `mdifferentiablef` (1×) vs `mdifferentiable` (239×): `Filter.EventuallyEq.mdifferentiablefWithinAt_iff` (Mathlib/Geometry/Manifold/MFDeriv/Basic.lean:982) | Typo for `mdifferentiableWithinAt_iff`, but that name is taken (l.999) by the same lemma with the sides swapped (`MDiffAt[s] f x ↔ MDiffAt[s] f₁ x`; uses at VectorBundle/MDifferentiable.lean:51, MFDeriv/Basic.lean:1060, 1071). Question: flip `mdifferentiableWithinAt_iff` to the standard orientation of `contMDiffWithinAt_iff`/`mdifferentiableAt_iff`/`differentiableWithinAt_iff` (breaking) and deprecate `mdifferentiablefWithinAt_iff` to it, or deprecate the typo'd lemma in favour of the swapped one? |
-| open | `indist` | `Mathlib/Probability/Process/Indistinguishable.lean:110` | (low) `indist` (1×) vs `nndist` (179×): `Filter.EventuallyEq.indist` (Mathlib/Probability/Process/Indistinguishable.lean:110) |  |
 | fp | `contestant` | `Archive/Imo/Imo1998Q2.lean:78` | (low) `contestant` (3×) vs `constant` (288×): `Imo1998Q2.AgreedTriple.contestant` (Archive/Imo/Imo1998Q2.lean:78), `Imo1998Q2.A_fibre_over_contestant` (Archive/Imo/Imo1998Q2.lean:109), `Imo1998Q2.A_fibre_over_contestant_card` (Archive/Imo/Imo1998Q2.lean:116) | prefix/abbreviation, not a misspelling |
 | fp | `doubles` | `Archive/Imo/Imo2010Q5.lean:135` | (low) `doubles` (1×) vs `double` (72×): `Imo2010Q5.Reachable.doubles` (Archive/Imo/Imo2010Q5.lean:135) | prefix/abbreviation, not a misspelling |
 | fp | `mrepr` | `Archive/MiuLanguage/Basic.lean:116` | (low) `mrepr` (1×) vs `repr` (292×): `Miu.Miustr.mrepr` (Archive/MiuLanguage/Basic.lean:116) | prefix/abbreviation, not a misspelling |
@@ -1997,6 +1996,7 @@ Findings about the names of declarations themselves — casing, Lean 3 spellings
 | fp | `codirected` | `Mathlib/Order/SuccPred/Archimedean.lean:87` | (low) `codirected` (2×) vs `directed` (225×): `le_total_of_codirected` (Mathlib/Order/SuccPred/Archimedean.lean:87), `lt_or_le_of_codirected` (Mathlib/Order/SuccPred/Archimedean.lean:109) | prefix/abbreviation, not a misspelling |
 | fp | `uzero` | `Mathlib/Order/Types/Defs.lean:258` | (low) `uzero` (3×) vs `zero` (11120×): `OrderType.lift_uzero` (Mathlib/Order/Types/Defs.lean:258), `Cardinal.lift_uzero` (Mathlib/SetTheory/Cardinal/Defs.lean:179), `Ordinal.lift_uzero` (Mathlib/SetTheory/Ordinal/Basic.lean:585) | prefix/abbreviation, not a misspelling |
 | fp | `antichains` | `Mathlib/Order/WellFoundedSet.lean:341` | (low) `antichains` (1×) vs `antichain` (41×): `Set.partiallyWellOrderedOn_iff_finite_antichains` (Mathlib/Order/WellFoundedSet.lean:341) | prefix/abbreviation, not a misspelling |
+| fp | `indist` | `Mathlib/Probability/Process/Indistinguishable.lean:110` | (low) `indist` (1×) vs `nndist` (179×): `Filter.EventuallyEq.indist` (Mathlib/Probability/Process/Indistinguishable.lean:110) | deliberate abbreviation: the module docstring (Indistinguishable.lean:26) sets `indist` as the recommended spelling of `Indistinguishable` in names |
 | fp | `tensorf` | `Mathlib/RingTheory/AdicCompletion/AsTensorProduct.lean:260` | (low) `tensorf` (1×) vs `tensor` (1583×): `AdicCompletion.lTensorf` (Mathlib/RingTheory/AdicCompletion/AsTensorProduct.lean:260) | prefix/abbreviation, not a misspelling |
 | fp | `contain` | `Mathlib/RingTheory/Derivation/DifferentialRing.lean:62` | (low) `contain` (1×) vs `contains` (34×): `Differential.ContainConstants` (Mathlib/RingTheory/Derivation/DifferentialRing.lean:62) | prefix/abbreviation, not a misspelling |
 | fp | `localize` | `Mathlib/RingTheory/Frobenius.lean:134` | (low) `localize` (3×) vs `localized` (200×): `AlgHom.IsArithFrobAt.localize` (Mathlib/RingTheory/Frobenius.lean:134), `AlgHom.IsArithFrobAt.localize_algebraMap` (Mathlib/RingTheory/Frobenius.lean:141), `AlgHom.IsArithFrobAt.isArithFrobAt_localize` (Mathlib/RingTheory/Frobenius.lean:149) | English verb: `IsArithFrobAt.localize` is the induced automorphism of `Localization.AtPrime Q` (docstring “restricts to an automorphism of `S_Q`”); not `localized`. |
