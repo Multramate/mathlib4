@@ -32,6 +32,7 @@ from __future__ import annotations
 import argparse
 import collections
 import datetime
+import json
 import os
 import re
 
@@ -190,6 +191,74 @@ NOTE_DEPRECATE = re.compile(r"^deprecate\s*`([^`]+)`")
 DOUBLED = {"DOC-C3", "DATA-Y2", "STR-S3"}
 
 
+REF = re.compile(r"((?:Mathlib|Archive|Counterexamples|MathlibTest|scripts|docs)/[\w/.'-]+?\.\w+)?:(\d+)\b")
+SCAN_DIRS = ("Mathlib", "Archive", "Counterexamples", "MathlibTest")
+
+
+def load_review(root: str) -> dict:
+    """{(category, finding, file): declarations} from `docs/typo_review.jsonl`."""
+    out = {}
+    p = os.path.join(root, "docs", "typo_review.jsonl")
+    if os.path.exists(p):
+        with open(p, encoding="utf-8") as fh:
+            for line in fh:
+                r = json.loads(line)
+                out[(r["category"], r["token"], r["location"].rpartition(":")[0])] = \
+                    r.get("declarations") or []
+    return out
+
+
+def edit_estimate(root: str, tickets: list) -> None:
+    """Attach to each ticket the files it edits and the lines it changes.
+
+    Prose rows change their own line and the other sites their note lists. A renamed, deprecated
+    or unnamed declaration changes its declaration line and every line using it; the deprecated
+    aliases a rename adds are not counted. A use is a line holding the name's last component,
+    restricted, for a component used in more than five files, to lines that qualify it or sit in
+    the declaring file — so the count is an estimate, not an exact diff."""
+    review = load_review(root)
+    acts = {}
+    for t in tickets:
+        for r in t["rows"]:
+            ds = [d for d in review.get((r["cat"], r["name"], r["file"]), [])
+                  if d.get("verdict") in ("rename", "deprecate", "drop-name") and d.get("name")]
+            acts[id(r)] = ds
+    wanted = {d["name"].split(".")[-1] for ds in acts.values() for d in ds}
+    hits = collections.defaultdict(list)
+    for d in SCAN_DIRS:
+        for dp, _dn, fn in os.walk(os.path.join(root, d)):
+            for f in fn:
+                if not f.endswith(".lean"):
+                    continue
+                path = os.path.join(dp, f)
+                rel = os.path.relpath(path, root).replace(os.sep, "/")
+                with open(path, encoding="utf-8") as fh:
+                    for i, line in enumerate(fh, 1):
+                        for tok in set(TOKEN.findall(line)) & wanted:
+                            hits[tok].append((rel, i, line))
+    for t in tickets:
+        lines = set()
+        for r in t["rows"]:
+            ds = acts[id(r)]
+            if not ds:
+                lines.add((r["file"], r["line"]))
+                for m in REF.finditer(r["note"] if r["cat"].startswith(("DOC-", "NAME-F1", "STR-", "TREE-", "TEXT-", "DATA-", "DEP-")) else ""):
+                    lines.add((m.group(1) or r["file"], int(m.group(2))))
+                continue
+            for d in ds:
+                full = d["name"]
+                last = full.split(".")[-1]
+                home = (d.get("loc") or "").rpartition(":")[0] or r["file"]
+                occ = hits.get(last, [])
+                wide = len({f for f, _i, _l in occ}) > 5
+                qual = ".".join(full.split(".")[-2:])
+                for f, i, line in occ:
+                    if not wide or f == home or qual in line:
+                        lines.add((f, i))
+        t["edit_files"] = len({f for f, _i in lines}) or len(t["files"])
+        t["edit_lines"] = len(lines)
+
+
 def change_key(r: dict) -> tuple:
     if r["cat"] in DOUBLED:
         return ("doubled", r["name"])
@@ -287,6 +356,12 @@ def render(tickets, live, out_path, swept):
     L.append("it touches. There is no file cap: a reviewer reads one kind of change throughout, so")
     L.append("splitting a category would only multiply the pull requests.")
     L.append("")
+    L.append("`Files edited` and `Lines changed` estimate the pull request: the lines of every finding")
+    L.append("and of the other sites its note lists, and for a renamed or deprecated declaration its")
+    L.append("declaration line plus every line that uses it. The deprecated aliases a rename adds are")
+    L.append("not counted. Uses of a name whose last component is common are matched only where they")
+    L.append("are qualified or in the declaring file, so the figures are estimates, not exact diffs.")
+    L.append("")
     L.append("Two kinds of ticket cost more than the files they list. A **declaration rename** moves")
     L.append("every call site: keep the old name with `@[deprecated (since := \"…\")] alias old := new`")
     L.append("for a theorem, or `@[deprecated new (since := \"…\")] abbrev old := new` for a `def`, so the")
@@ -312,13 +387,12 @@ def render(tickets, live, out_path, swept):
             continue
         L.append(f"## {tier} — {TIER_BLURB[tier][0]}")
         L.append("")
-        L.append("| Ticket | Suggested PR title | Category | Change | Files | Rows | Sweep |")
+        L.append("| Ticket | Suggested PR title | Category | Change | Rows | Files edited | Lines changed |")
         L.append("|---|---|---|---|---:|---:|---:|")
         for t in tt:
             ch = t["changes"][0] if len(t["changes"]) == 1 else f"{len(t['changes'])} substitutions"
             L.append(f"| [{t['id']}](#{t['id'].lower()}) | {md_escape(t['title'])} | {t['cat']} | "
-                     f"{md_escape(ch)} | {len(t['files'])} | {len(t['rows'])} | "
-                     f"{t['sweep'] or '—'} |")
+                     f"{md_escape(ch)} | {len(t['rows'])} | {t['edit_files']} | {t['edit_lines']} |")
         L.append("")
 
     L.append("## Tickets")
@@ -327,7 +401,8 @@ def render(tickets, live, out_path, swept):
         L.append(f"### {t['id']}")
         L.append("")
         L.append(f"**{t['title']}** — {t['cat_title']} (`{t['cat']}`), {t['kind']}, "
-                 f"{len(t['files'])} file(s), {len(t['rows'])} finding(s).")
+                 f"{len(t['rows'])} finding(s); edits about {t['edit_lines']} line(s) in "
+                 f"{t['edit_files']} file(s), not counting deprecated aliases.")
         L.append("")
         if is_file_rename(t["cat"]) and t["sweep"]:
             L.append(f"File rename: {t['sweep']} file(s) import these modules and must be updated in "
@@ -379,6 +454,8 @@ def main():
             imports = import_sweep(root)
 
     tickets = build(live, names, imports)
+    print("estimating edits ...")
+    edit_estimate(root, tickets)
     render(tickets, live, out, not args.no_sweep)
 
     print(f"{len(tickets)} tickets -> {out}")
