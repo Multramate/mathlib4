@@ -144,16 +144,23 @@ are in sentence case (proper nouns keep their capitals).
   definition (`copy_of_normedField` → `copyOfNormedField`); `fp` for `Simps` projections, names
   prescribed by a framework, and definitions whose name is a lemma-style description of a proof
   term used as data (judge by the family in the same file).
-- `NAME-A6`/`A7` instance names: see rule 5. The scanner sometimes calls a `Prop` class
-  "data-valued"; that does not matter for the house rule, but it does matter for whether the
-  name is used.
+- `NAME-I1` instance names to drop: the fix is always to drop the name (an anonymous instance,
+  no alias) and replace every use. Confirmed when the name is genuinely wrong — `UpperCamelCase`,
+  `snake_case` on a data instance, a Lean 3 `has_…` relic (`hasInv` for an `Inv` instance), or a
+  misspelled or miscased component — and its uses can be replaced simply; `wontfix` when the name
+  is needed (`attribute [local instance]`, `@name`, many uses, `@[simps]` lemma names). A
+  `Prop`-valued instance with a conventional `snake_case` name is not flagged at all.
 - `NAME-A8` structure fields: rows marked `mixed convention` and `carrier : Type u` are `fp`
   (established); confirm only clear violations (a `Prop` field in `lowerCamelCase` that is a
   conjunction-style statement, a data field in `snake_case`), and note that renaming a field
   needs a deprecated alias for the projection.
-- `NAME-B1` misspelled name components, `NAME-B3` flattened camelCase: confirm misspellings with
-  the corrected name of **every** affected declaration; `fp` for
-  abbreviations, prefixes, real words, and correct lowercasings under rule 2.
+- `NAME-B1` misspelled name components: confirm misspellings with the corrected name of every
+  affected declaration; `fp` for abbreviations, prefixes and real words. Casing slips are B3 and
+  instance names are I1, so neither appears here.
+- `NAME-B3` miscased name components (`relindex` for `relIndex`, `Lseries` for `LSeries`,
+  `localizationtoStalkₗ` for `localizationToStalk…`): confirm with the corrected casing. Rule 2
+  applies (`ltSeries` → `ltseries`), except where it would make a different word (`gOne` would
+  become `gone`) or fight a large consistent family: `wontfix`.
 - `NAME-B2` camelCase tokens that name no declaration: confirm when the token is an outdated or
   misspelled spelling of a declaration that occurs in the statement (e.g. `uniformInducing` for
   `IsUniformInducing`); `fp` for deliberate abbreviations of a longer name used consistently in a family, names of local definitions/variables/notation,
