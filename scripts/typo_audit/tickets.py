@@ -79,13 +79,14 @@ PR_TITLE = {
     "NAME-A11": "chore: remove stray underscores from names",
     "NAME-B1": "chore: fix typos in declaration names",
     "NAME-B2": "chore: fix unknown camelCase tokens in names",
-    "NAME-B3": "chore: un-flatten camelCase in names",
+    "NAME-B3": "chore: fix the casing of name components",
     "NAME-C1": "chore: use camelCase spellings in names",
     "NAME-C2": "chore: replace outdated name components",
     "NAME-D1": "chore: align names with their statements",
     "NAME-D2": "chore: name `n + 1` statements without `succ`",
     "NAME-E1": "chore: deduplicate identical statements",
     "NAME-F1": "chore: fix typos in comments and docstrings",
+    "NAME-I1": "chore: make badly named instances anonymous",
 }
 PREFIX_TITLE = {
     "STR": "chore: fix typos in error messages and other string literals",

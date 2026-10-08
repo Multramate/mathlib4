@@ -531,11 +531,6 @@ CATEGORY_INFO = collections.OrderedDict([
             "(`foo_bar` instead of `fooBar`). `Simps` projection names are exempt (their names are prescribed).")),
     ("A5", ("Structures / classes / inductives not in UpperCamelCase",
             "Types and type classes must be `UpperCamelCase`.")),
-    ("A6", ("Instances of data-valued classes named in snake_case",
-            "Instances of data-carrying classes (`Algebra`, `Module`, `Unique`, …) are data and should be "
-            "`lowerCamelCase`; snake_case instance names are conventional only for `Prop`-valued classes.")),
-    ("A7", ("Instances named in UpperCamelCase",
-            "Explicit instance names are `lowerCamelCase` (or auto-generated `instFoo`), never `UpperCamelCase`.")),
     ("A8", ("Structure fields with unexpected casing",
             "Prop fields are `snake_case` (a single predicate is `lowerCamelCase`, e.g. `isOpen'`), data fields are "
             "`lowerCamelCase`, predicate-valued fields (`… → Prop`) are `UpperCamelCase` (`IsOpen`). Rows marked "
@@ -555,8 +550,11 @@ CATEGORY_INFO = collections.OrderedDict([
             "A `lowerCamelCase`/`UpperCamelCase` token in a theorem name should name an existing declaration (or a "
             "dictionary word like `natCast`). `unknown` rows are typo/outdated candidates; `abbrev of X` rows are "
             "shortened references (`hasDeriv` for `HasDerivAt`) which are a milder inconsistency.")),
-    ("B3", ("Flattened camelCase (`relindex` for `relIndex`)",
-            "A lowercase token that is exactly the lowercased form of a multi-word camelCase declaration name.")),
+    ("B3", ("Miscased name components (`relindex` for `relIndex`, `Lseries` for `LSeries`)",
+            "A name component that spells an existing declaration with the wrong letter case: flattened "
+            "(`relindex` for `relIndex`), mis-capitalised (`Lseries` for `LSeries`, `localizationtoStalk` for "
+            "`localizationToStalk`), or an UpperCamelCase name lowercased against rule 2 (`cStar` for "
+            "`CStar`, whose initial run of capitals lowercases as a whole: `cstar`). Instance names are left to I1.")),
     ("C1", ("Lean 3 style snake_case spellings of camelCase names",
             "Token sequences such as `set_of`, `nat_cast`, `strict_mono`, `not_mem` where Mathlib now uses "
             "`setOf`, `natCast`, `strictMono`, `notMem`. Only patterns whose camelCase spelling dominates are "
@@ -574,6 +572,13 @@ CATEGORY_INFO = collections.OrderedDict([
     ("E1", ("Textually identical statements under different names",
             "Two non-deprecated theorems in the same namespace (or one at root) whose binders, statement and "
             "the types of the section variables they use are textually identical. Candidates for `alias`/removal.")),
+    ("I1", ("Instance names to drop",
+            "Mathlib prefers anonymous instances, and a badly named one is fixed by dropping its name rather than "
+            "renaming it. Flagged: an `UpperCamelCase` name, a `snake_case` name on a data instance (whether the "
+            "instance is a `Prop` is read from the built library when `--instance-props` is given), a Lean 3 "
+            "`has_…` relic naming a class that is now called otherwise (`hasEmptyc` for `EmptyCollection`, "
+            "`hasInv` for `Inv`), and a name with a misspelled or miscased component. A name used elsewhere must "
+            "have its uses replaced (e.g. by `inferInstance`), so such rows may be `wontfix`.")),
     ("F1", ("Probable spelling errors in comments and docstrings",
             "Prose, not names: a word used at most twice in Mathlib's comments, unknown to `aspell`, and within "
             "edit distance 1 (or 2, for long words) of a word the comments use often. Identifiers that escape a "
@@ -594,7 +599,11 @@ def lower_initial_caps(name: str) -> str:
 
 
 class Audit:
-    def __init__(self, decls: list, dep_decls: list, root: str):
+    def __init__(self, decls: list, dep_decls: list, root: str, instance_props: dict = None):
+        self.instance_props = instance_props or {}
+        self.dep_decls = dep_decls
+        self.instance_issues: dict = collections.defaultdict(list)
+        self.miscased: set = set()
         self.decls = decls
         self.root = root
         self.findings: list = []
@@ -607,6 +616,9 @@ class Audit:
             self._learn(x)
         self.namespaces = self._collect_namespaces()
         self.known_stripped = {self.strip_decor(k) for k in self.known_last | self.known_lcfirst}
+        self.known_has = {self.strip_sub(k) for k in self.known_last if k.startswith("Has")}
+        self.known_has |= {self.strip_sub(n.rsplit(".", 1)[-1]) for n, kind in self.instance_props.items()
+                           if kind == "has"}
         self.prop_classes = self._prop_classes()
         self.upper_data_defs = self._upper_data_defs()
         self.class_decls = [x for x in decls if x["kind"] in ("class", "class inductive")]
@@ -621,6 +633,16 @@ class Audit:
     @staticmethod
     def strip_decor(tok: str) -> str:
         return re.sub(r"['!?₀-₉]+$", "", tok)
+
+    @staticmethod
+    def strip_sub(tok: str) -> str:
+        """Also drop trailing subscript letters (`localizationToStalkₗ`)."""
+        return re.sub(r"['!?\u2080-\u209c]+$", "", tok)
+
+    def instance_issue(self, x: dict, reason: str):
+        """Record why an instance's name should go; `check_instances` turns these into I1 rows."""
+        if reason not in self.instance_issues[id(x)]:
+            self.instance_issues[id(x)].append(reason)
 
     @staticmethod
     def tokens(comp: str) -> list:
@@ -816,13 +838,22 @@ class Audit:
                 comp = self.last(x["full"])
                 if comp.startswith("«"):
                     continue
-                if "_" in comp.rstrip("'"):
-                    head = self.conclusion_head(x["type"])
-                    if head and len(head) > 1 and head not in ("letI", "haveI", "let", "have") \
-                            and head not in self.prop_classes and head.split(".")[-1] not in self.prop_classes:
-                        self.add("A6", x, f"snake_case instance of data-valued class `{head}`", "medium")
-                elif comp[:1].isupper():
-                    self.add("A7", x, "UpperCamelCase instance name", "low")
+                head = self.conclusion_head(x["type"]) or "?"
+                known_kind = self.instance_props.get(x["full"])
+                if known_kind is None:
+                    is_data = head not in ("letI", "haveI", "let", "have") and len(head) > 1 \
+                        and head not in self.prop_classes and head.split(".")[-1] not in self.prop_classes
+                else:
+                    is_data = known_kind == "data"
+                if comp[:1].isupper() and "_" not in comp and not UPPER_TOKEN_OK.match(comp):
+                    self.instance_issue(x, "`UpperCamelCase` name")
+                elif "_" in comp.rstrip("'") and is_data:
+                    self.instance_issue(x, f"`snake_case` name on a data instance of `{head}`")
+                for m in re.finditer(r"(?:^|_)has([A-Z][\w']*)", comp):
+                    ws = CAMEL_RE.findall(self.strip_sub(m.group(1)))
+                    if not any(("Has" + "".join(ws[:k])) in self.known_has for k in range(1, len(ws) + 1)):
+                        self.instance_issue(x, f"Lean 3 `has_…` name (`has{m.group(1)}`) for an instance of "
+                                               f"`{head}`")
         for ns, cnt in self.namespaces.items():
             for comp in ns.split("."):
                 if comp != "_root_" and not comp.startswith("«") and "_" in comp:
@@ -907,6 +938,7 @@ class Audit:
     def check_spelling(self):
         wc: collections.Counter = collections.Counter()
         where: dict = collections.defaultdict(list)
+        miscased_words = {w.lower() for t in self.miscased for w in CAMEL_RE.findall(t)}
         for x in self.live:
             names = []
             if x["full"]:
@@ -961,6 +993,8 @@ class Audit:
             return dist[la][lb]
 
         for w in rare:
+            if w in miscased_words:
+                continue  # a casing problem, reported in B3
             cands: set = set()
             for d in deletes(w, 2):
                 cands |= index.get(d, set())
@@ -971,12 +1005,103 @@ class Audit:
                     if best is None or dist < best[0] or (dist == best[0] and wc[c] > wc[best[1]]):
                         best = (dist, c)
             if best:
-                ex = ", ".join(f"`{y['full'] or y['kind']}` ({self.loc(y)})" for y in where[w][:3])
-                x0 = where[w][0]
+                for y in where[w]:
+                    if y["kind"] == "instance" and y["full"]:
+                        self.instance_issue(y, f"misspelled component `{w}` (vs `{best[1]}`)")
+                ys = [y for y in where[w] if y["kind"] != "instance"]
+                if not ys:
+                    continue
+                ex = ", ".join(f"`{y['full'] or y['kind']}` ({self.loc(y)})" for y in ys[:3])
+                x0 = ys[0]
                 self.add_raw("B1", f"B1|{w}", w, "word", x0["file"], x0["line"],
                              f"`{w}` ({wc[w]}×) vs `{best[1]}` ({wc[best[1]]}×): {ex}", "low")
 
-    # ---- B2: unknown camel tokens, B3: flattened camel tokens
+    # ---- B3: miscased name components
+    def check_miscased(self):
+        """A name component spelling a declaration with the wrong letter case.
+
+        The canonical spellings are the names of definitions, types, fields and constructors (not of
+        theorems, whose names are what is being checked). Inside another name a canonical `k` may be
+        written as `k` itself or, by rule 2, with its whole initial run of capitals lowercased; an
+        `UpperCamelCase` copy of a `lowerCamelCase` name is an A1 matter, not a casing one."""
+        canon = collections.defaultdict(set)
+        for x in self.decls + self.dep_decls:
+            names = [f for f, _ in x.get("fields", [])] + list(x.get("ctors", []))
+            if x["full"] and x["kind"] not in THM_KINDS | {"alias", "instance"}:
+                names.append(self.last(x["full"]))
+            for k in names:
+                k = self.strip_sub(k)
+                if len(k) >= 4 and not k.startswith("«") and re.search(r"[A-Z]", k):
+                    canon[k.lower()].add(k)
+        tc: collections.Counter = collections.Counter()
+        where: dict = collections.defaultdict(list)
+        uses: dict = collections.defaultdict(list)  # every token, for the reverse case below
+        for x in self.live:
+            if not x["full"] or x["kind"] not in THM_KINDS | DEF_KINDS | {"instance"}:
+                continue
+            comp = self.last(x["full"])
+            if comp.startswith("«"):
+                continue
+            for t in {self.strip_sub(t) for t in self.tokens(comp)}:
+                if t.lower() in canon:
+                    uses[t].append(x)
+            seen = set()
+            for t in self.tokens(comp):
+                t = self.strip_sub(t)
+                if len(t) < 4 or t in seen or t in DICT_TOKENS or not t.isascii():
+                    continue
+                ks = canon.get(t.lower())
+                if not ks:
+                    continue
+                ok = set()
+                for k in ks:
+                    ok |= {k, lower_initial_caps(k), k[:1].upper() + k[1:]}
+                if t in ok:
+                    continue
+                seen.add(t)
+                tc[t] += 1
+                where[t].append(x)
+        # Words that name components of many declarations; a casing whose words are all of these marks
+        # real word boundaries.
+        wordc: collections.Counter = collections.Counter()
+        for x in self.live:
+            if x["full"]:
+                wordc.update(set(self.words(self.last(x["full"]))))
+        real = lambda w: all(wordc[v.lower()] >= 5 for v in CAMEL_RE.findall(w) if not v.isdigit())
+        for t in list(tc):
+            # When the declared spelling is a `lowerCamelCase` definition whose words are not all real words
+            # while the variant's are, and it is used no more often, the definition is the slip
+            # (`localizationtoStalkₗ` beside `stalkToFiberRingHom_localizationToStalk`): report it instead.
+            ks = canon[t.lower()]
+            if all(k[:1].islower() and not real(k) and real(t) and len(uses[k]) <= tc[t] for k in ks):
+                for k in ks:
+                    tc[k], where[k] = len(uses[k]), uses[k]
+                    canon[k.lower()] = canon[k.lower()] | {t}
+                del tc[t]
+        for t, c in tc.items():
+            if c > 6:
+                continue  # a spelling used this widely is a convention, not a slip
+            self.miscased.add(t)
+            ks = sorted(k for k in canon[t.lower()] if k != t)
+            for y in where[t]:
+                if y["kind"] == "instance":
+                    self.instance_issue(y, f"miscased component `{t}` (vs `{'`/`'.join(ks)}`)")
+            ys = [y for y in where[t] if y["kind"] != "instance"]
+            if not ys:
+                continue
+            ex = ", ".join(f"`{y['full']}` ({self.loc(y)})" for y in ys[:3])
+            x0 = ys[0]
+            self.add_raw("B3", f"B3|{t}", t, "token", x0["file"], x0["line"],
+                         f"`{t}` ({c}×) vs `{'`/`'.join(ks)}`: {ex}", "medium")
+
+    # ---- I1: instance names to drop
+    def check_instances(self):
+        for x in self.live:
+            reasons = self.instance_issues.get(id(x))
+            if reasons and x["kind"] == "instance" and x["full"]:
+                self.add("I1", x, "; ".join(reasons), "medium")
+
+    # ---- B2: unknown camel tokens
     def check_camel_tokens(self):
         tc: collections.Counter = collections.Counter()
         where: dict = collections.defaultdict(list)
@@ -999,7 +1124,7 @@ class Audit:
         superstrings = sorted(k for k in self.known_last | self.known_lcfirst if len(k) >= 6)
         for t, c in tc.items():
             if c > 12 or t in self.known_last or t in self.known_lcfirst or t in DICT_TOKENS \
-                    or t in self.known_stripped or not t[:1].isascii():
+                    or t in self.known_stripped or not t[:1].isascii() or t in self.miscased:
                 continue
             ex = ", ".join(f"`{y['full']}` ({self.loc(y)})" for y in where[t][:3])
             x0 = where[t][0]
@@ -1015,36 +1140,6 @@ class Audit:
             else:
                 self.add_raw("B2", f"B2|{t}", t, "token", x0["file"], x0["line"],
                              f"`{t}` ({c}×): unknown: {ex}", "medium")
-        # B3
-        flat: dict = {}
-        for k in self.known_last | self.known_lcfirst:
-            if re.search(r"[a-z][A-Z]", k) and "_" not in k and len(CAMEL_RE.findall(k)) >= 2:
-                flat.setdefault(self.strip_decor(k).lower(), set()).add(k)
-        tc2: collections.Counter = collections.Counter()
-        where2: dict = collections.defaultdict(list)
-        for x in self.live:
-            if not x["full"] or x["kind"] not in THM_KINDS | DEF_KINDS | {"instance"}:
-                continue
-            comp = self.last(x["full"])
-            if comp.startswith("«"):
-                continue
-            for t in self.tokens(comp):
-                t = self.strip_decor(t)
-                # `sfinite` for `SFinite` is the correct spelling, not a flattening of `sFinite`.
-                if len(t) >= 6 and t.islower() and t in flat and not any(
-                        lower_initial_caps(k[:1].upper() + k[1:]) == t
-                        for k in flat[t] if k in self.known_lcfirst and k not in self.known_last):
-                    tc2[t] += 1
-                    if len(where2[t]) < 6:
-                        where2[t].append(x)
-        for t, c in tc2.items():
-            if c > 6:
-                continue
-            ex = ", ".join(f"`{y['full']}` ({self.loc(y)})" for y in where2[t][:3])
-            x0 = where2[t][0]
-            self.add_raw("B3", f"B3|{t}", t, "token", x0["file"], x0["line"],
-                         f"`{t}` ({c}×) vs `{'`/`'.join(sorted(flat[t]))}`: {ex}", "medium")
-
     # ---- C1: snake_case forms of camelCase names, C2: outdated tokens
     def check_snake_of_camel(self):
         camel_names: dict = {}
@@ -1163,8 +1258,10 @@ class Audit:
     def run(self, prose_dirs=("Mathlib", "Archive", "Counterexamples")) -> list:
         self.check_casing()
         self.check_fields()
+        self.check_miscased()
         self.check_spelling()
         self.check_camel_tokens()
+        self.check_instances()
         self.check_snake_of_camel()
         self.check_outdated_tokens()
         self.check_semantics()
@@ -1317,6 +1414,8 @@ def main():
     ap.add_argument("--deps", nargs="*", default=[], help="directories with upstream Lean sources")
     ap.add_argument("--out", default=None, help="output markdown (default docs/naming_audit.md)")
     ap.add_argument("--dump", default=None, help="also dump the raw declaration records to this JSON file")
+    ap.add_argument("--instance-props", default=None,
+                    help="TSV of `instance<TAB>prop|data` from instance_props.lean (else a heuristic decides)")
     args = ap.parse_args()
     root = os.path.abspath(args.root)
     out = args.out or os.path.join(root, "docs", "naming_audit.md")
@@ -1328,7 +1427,11 @@ def main():
     for d in args.deps:
         d = os.path.abspath(d)
         dep_decls.extend(extract_tree(os.path.dirname(d), [os.path.basename(d)]))
-    audit = Audit(decls, dep_decls, root)
+    props = {}
+    if args.instance_props:
+        with open(args.instance_props, encoding="utf-8") as f:
+            props = dict(line.rstrip("\n").split("\t", 1) for line in f if "\t" in line)
+    audit = Audit(decls, dep_decls, root, props)
     findings = audit.run()
     existing = read_existing(out)
     files = len({x["file"] for x in decls})

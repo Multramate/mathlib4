@@ -47,7 +47,9 @@ file used by the library's own linters.
   name/statement mismatches and textually duplicated statements — and (re)generates the living
   audit document `docs/naming_audit.md`. Re-running preserves the hand-edited `Status`/`Note`
   cells of rows that still apply. Pass `--deps` with checkouts of Lean core (`src/Init`, `src/Std`,
-  `src/Lean`) and Batteries so that upstream names are recognised.
+  `src/Lean`) and Batteries so that upstream names are recognised, and `--instance-props` with the
+  output of `naming_audit/instance_props.lean` (run with `lake env lean` in a built checkout) so that
+  `Prop`-valued instances are told apart from data instances exactly.
 - `naming_audit/prose_typos.py`
   Spell-checks comments and docstrings, using Mathlib's own comment corpus as the dictionary so
   that technical vocabulary is not flagged: a word is reported only when it is rare in the corpus,
